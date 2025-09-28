@@ -45,8 +45,10 @@ describe("inviteMemberAction", () => {
     const result = await inviteMemberAction(formData);
 
     expect(result.success).toBe(true);
-    expect(result.data?.acceptUrl).toBe("http://localhost:3000/invites/token-demo");
-    expect(result.data?.delivered).toBe(false);
+    if (result.success) {
+      expect(result.data?.acceptUrl).toBe("http://localhost:3000/invites/token-demo");
+      expect(result.data?.delivered).toBe(false);
+    }
     expect(mockEnforceRateLimit).toHaveBeenCalledWith("workspace:invite:user_123");
     expect(mockInviteToWorkspace).toHaveBeenCalledWith({
       workspaceId: "ws_123",
