@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { getServerEnv } from "@/lib/env";
 import { sendMail } from "@/server/mailer";
-import type { Prisma, WorkspaceRole } from "@prisma/client";
+import type { Prisma, WorkspaceMember, WorkspaceRole } from "@prisma/client";
 
 const INVITE_EXPIRATION_HOURS = 48;
 
@@ -188,7 +188,11 @@ export async function inviteToWorkspace(params: {
   inviterId: string;
   email: string;
   role: WorkspaceRole;
-}) {
+}): Promise<{
+  invite: Awaited<ReturnType<typeof prisma.workspaceInvite.create>>;
+  acceptUrl: string;
+  delivered: boolean;
+}> {
   await assertCanManageWorkspace(params.inviterId, params.workspaceId);
 
   const existingMember = await prisma.workspaceMember.findFirst({
@@ -208,10 +212,19 @@ export async function inviteToWorkspace(params: {
       email: params.email,
       status: "PENDING",
     },
+    include: {
+      workspace: true,
+    },
   });
 
+  const env = getServerEnv();
+
   if (existingInvite) {
-    return existingInvite;
+    return {
+      invite: existingInvite,
+      acceptUrl: `${env.APP_URL}/invites/${existingInvite.token}`,
+      delivered: false,
+    };
   }
 
   const token = nanoid(32);
@@ -239,10 +252,9 @@ export async function inviteToWorkspace(params: {
     metadata: { inviteId: invite.id, role: invite.role },
   });
 
-  const env = getServerEnv();
   const acceptUrl = `${env.APP_URL}/invites/${invite.token}`;
 
-  await sendMail({
+  const delivered = await sendMail({
     to: invite.email,
     subject: `You're invited to ${invite.workspace.name}`,
     text: `Join ${invite.workspace.name} on ${env.APP_URL}. Invitation link: ${acceptUrl}`,
@@ -250,7 +262,7 @@ export async function inviteToWorkspace(params: {
     tags: { type: "workspace.invite" },
   });
 
-  return invite;
+  return { invite, acceptUrl, delivered };
 }
 
 export async function getInviteByToken(token: string) {
@@ -365,6 +377,93 @@ export async function switchDefaultWorkspace(userId: string, workspaceId: string
   }
 
   await setDefaultWorkspace(userId, workspaceId);
+}
+
+export async function renameWorkspace(params: { workspaceId: string; actorId: string; name: string }) {
+  await assertCanManageWorkspace(params.actorId, params.workspaceId);
+
+  const trimmedName = params.name.trim();
+  if (trimmedName.length < 2) {
+    throw new Error("Workspace name is too short");
+  }
+
+  const workspace = await prisma.workspace.update({
+    where: { id: params.workspaceId },
+    data: { name: trimmedName },
+  });
+
+  await recordAuditLog({
+    workspaceId: params.workspaceId,
+    actorId: params.actorId,
+    action: "workspace.renamed",
+    target: params.workspaceId,
+    metadata: { name: trimmedName },
+  });
+
+  return workspace;
+}
+
+async function ensureRoleChangeAllowed(actorRole: WorkspaceRole, targetMembership: WorkspaceMember, nextRole: WorkspaceRole) {
+  if (actorRole === "ADMIN" && (nextRole === "OWNER" || targetMembership.role === "OWNER")) {
+    throw new Error("Only owners can manage owner roles");
+  }
+
+  if (targetMembership.role === "OWNER" && nextRole !== "OWNER") {
+    const remainingOwners = await prisma.workspaceMember.count({
+      where: {
+        workspaceId: targetMembership.workspaceId,
+        role: "OWNER",
+        status: "ACTIVE",
+        userId: { not: targetMembership.userId },
+      },
+    });
+
+    if (remainingOwners === 0) {
+      throw new Error("Workspaces must keep at least one owner");
+    }
+  }
+}
+
+export async function updateMemberRole(params: {
+  workspaceId: string;
+  actorId: string;
+  memberId: string;
+  role: WorkspaceRole;
+}) {
+  const actorRole = await assertCanManageWorkspace(params.actorId, params.workspaceId);
+
+  const membership = await prisma.workspaceMember.findUnique({
+    where: {
+      userId_workspaceId: { userId: params.memberId, workspaceId: params.workspaceId },
+    },
+  });
+
+  if (!membership) {
+    throw new Error("Member not found");
+  }
+
+  if (membership.role === params.role) {
+    return membership;
+  }
+
+  await ensureRoleChangeAllowed(actorRole, membership, params.role);
+
+  const updated = await prisma.workspaceMember.update({
+    where: {
+      userId_workspaceId: { userId: params.memberId, workspaceId: params.workspaceId },
+    },
+    data: { role: params.role },
+  });
+
+  await recordAuditLog({
+    workspaceId: params.workspaceId,
+    actorId: params.actorId,
+    action: "workspace.member.role_changed",
+    target: params.memberId,
+    metadata: { role: params.role },
+  });
+
+  return updated;
 }
 
 export async function removeMember(params: { workspaceId: string; actorId: string; memberId: string }) {

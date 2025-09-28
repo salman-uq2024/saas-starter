@@ -7,6 +7,9 @@ import { InviteMemberForm } from "@/components/settings/invite-member-form";
 import { CancelInviteButton } from "@/components/settings/cancel-invite-button";
 import { RemoveMemberButton } from "@/components/settings/remove-member-button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { RenameWorkspaceForm } from "@/components/settings/rename-workspace-form";
+import { MemberRoleSelect } from "@/components/settings/member-role-select";
+import { getServerEnv } from "@/lib/env";
 
 interface WorkspaceDetailsPageProps {
   params: Promise<{ workspaceId: string }>;
@@ -26,6 +29,8 @@ export default async function WorkspaceDetailsPage({ params }: WorkspaceDetailsP
 
   const currentMembership = workspace.memberships.find((member) => member.userId === session.user.id);
   const canManage = currentMembership && currentMembership.role !== "MEMBER";
+  const { APP_URL, SMTP_HOST } = getServerEnv();
+  const showInviteLinks = !SMTP_HOST;
 
   return (
     <div className="space-y-6">
@@ -33,6 +38,18 @@ export default async function WorkspaceDetailsPage({ params }: WorkspaceDetailsP
         <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{workspace.name}</h2>
         <p className="text-sm text-slate-500">Manage members, roles, and outstanding invitations.</p>
       </div>
+
+      {canManage ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>General</CardTitle>
+            <p className="text-sm text-slate-500">Rename the workspace to match your team or client.</p>
+          </CardHeader>
+          <CardContent>
+            <RenameWorkspaceForm workspaceId={workspace.id} defaultName={workspace.name} />
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-5">
         <Card className="lg:col-span-3">
@@ -55,9 +72,18 @@ export default async function WorkspaceDetailsPage({ params }: WorkspaceDetailsP
                       <p className="text-xs text-slate-500">{member.user.email}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Badge variant={member.role === "OWNER" ? "default" : member.role === "ADMIN" ? "success" : "muted"}>
-                        {member.role}
-                      </Badge>
+                      {canManage ? (
+                        <MemberRoleSelect
+                          workspaceId={workspace.id}
+                          memberId={member.userId}
+                          currentRole={member.role}
+                          disabled={member.userId === session.user.id && member.role === "OWNER"}
+                        />
+                      ) : (
+                        <Badge variant={member.role === "OWNER" ? "default" : member.role === "ADMIN" ? "success" : "muted"}>
+                          {member.role}
+                        </Badge>
+                      )}
                       {canManage && member.role !== "OWNER" ? (
                         <RemoveMemberButton
                           workspaceId={workspace.id}
@@ -102,8 +128,16 @@ export default async function WorkspaceDetailsPage({ params }: WorkspaceDetailsP
                 >
                   <div>
                     <p className="font-semibold text-slate-900 dark:text-slate-100">{invite.email}</p>
-                    <p className="text-xs text-slate-500">Role: {invite.role}</p>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <span>Role: {invite.role}</span>
+                      <Badge variant="muted">Pending</Badge>
+                    </div>
                     <p className="text-xs text-slate-500">Expires {invite.expiresAt.toLocaleString()}</p>
+                    {showInviteLinks ? (
+                      <p className="text-[11px] text-slate-400">
+                        Accept link: <span className="break-all">{`${APP_URL}/invites/${invite.token}`}</span>
+                      </p>
+                    ) : null}
                   </div>
                   {canManage ? <CancelInviteButton workspaceId={workspace.id} inviteId={invite.id} /> : null}
                 </li>

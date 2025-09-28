@@ -7,8 +7,10 @@ import {
   cancelInvite,
   createWorkspace,
   inviteToWorkspace,
+  renameWorkspace,
   removeMember,
   switchDefaultWorkspace,
+  updateMemberRole,
 } from "@/server/workspaces";
 import { requireUser, enforceRateLimit } from "@/server/actions/helpers";
 
@@ -20,6 +22,11 @@ const inviteSchema = z.object({
   workspaceId: z.string().min(1),
   email: z.string().email(),
   role: z.enum(["OWNER", "ADMIN", "MEMBER"]).default("MEMBER"),
+});
+
+const renameSchema = z.object({
+  workspaceId: z.string().min(1),
+  name: z.string().min(2).max(80),
 });
 
 const acceptSchema = z.object({
@@ -38,6 +45,12 @@ const removeMemberSchema = z.object({
 const cancelInviteSchema = z.object({
   workspaceId: z.string().min(1),
   inviteId: z.string().min(1),
+});
+
+const updateRoleSchema = z.object({
+  workspaceId: z.string().min(1),
+  memberId: z.string().min(1),
+  role: z.enum(["OWNER", "ADMIN", "MEMBER"]),
 });
 
 type ActionResult<T = void> =
@@ -76,7 +89,9 @@ export async function createWorkspaceAction(formData: FormData): Promise<ActionR
   }
 }
 
-export async function inviteMemberAction(formData: FormData): Promise<ActionResult> {
+export async function inviteMemberAction(
+  formData: FormData
+): Promise<ActionResult<{ acceptUrl: string; delivered: boolean }>> {
   let user;
   try {
     user = await requireUser();
@@ -101,18 +116,52 @@ export async function inviteMemberAction(formData: FormData): Promise<ActionResu
   }
 
   try {
-    await inviteToWorkspace({
+    const result = await inviteToWorkspace({
       workspaceId: parsed.data.workspaceId,
       inviterId: user.id,
       email: parsed.data.email,
       role: parsed.data.role,
     });
     revalidatePath(`/settings/workspaces/${parsed.data.workspaceId}`);
-    return { success: true };
+    return { success: true, data: { acceptUrl: result.acceptUrl, delivered: result.delivered } };
   } catch (error) {
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to send invite",
+    };
+  }
+}
+
+export async function renameWorkspaceAction(formData: FormData): Promise<ActionResult> {
+  let user;
+  try {
+    user = await requireUser();
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : "Unauthorized" };
+  }
+
+  const parsed = renameSchema.safeParse({
+    workspaceId: formData.get("workspaceId"),
+    name: formData.get("name"),
+  });
+
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid workspace name" };
+  }
+
+  try {
+    await renameWorkspace({
+      workspaceId: parsed.data.workspaceId,
+      actorId: user.id,
+      name: parsed.data.name,
+    });
+    revalidatePath(`/settings/workspaces/${parsed.data.workspaceId}`);
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to rename workspace",
     };
   }
 }
@@ -252,6 +301,42 @@ export async function cancelInviteAction(formData: FormData): Promise<ActionResu
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to cancel invite",
+    };
+  }
+}
+
+export async function updateMemberRoleAction(formData: FormData): Promise<ActionResult> {
+  let user;
+  try {
+    user = await requireUser();
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : "Unauthorized" };
+  }
+
+  const parsed = updateRoleSchema.safeParse({
+    workspaceId: formData.get("workspaceId"),
+    memberId: formData.get("memberId"),
+    role: formData.get("role"),
+  });
+
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid role" };
+  }
+
+  try {
+    await updateMemberRole({
+      workspaceId: parsed.data.workspaceId,
+      actorId: user.id,
+      memberId: parsed.data.memberId,
+      role: parsed.data.role,
+    });
+    revalidatePath(`/settings/workspaces/${parsed.data.workspaceId}`);
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to update role",
     };
   }
 }

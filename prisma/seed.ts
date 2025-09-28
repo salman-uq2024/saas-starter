@@ -61,6 +61,36 @@ async function main() {
   const owner = await upsertUser("founder@example.com", "Founding User", workspace.id, "OWNER", "America/New_York");
   const teammate = await upsertUser("teammate@example.com", "Teammate", workspace.id, "ADMIN", "Europe/London");
 
+  const demoWorkspace = await prisma.workspace.upsert({
+    where: { slug: "demo-studio" },
+    update: {},
+    create: {
+      name: "Demo Studio",
+      slug: "demo-studio",
+      plan: "FREE",
+      billingStatus: "NONE",
+    },
+  });
+
+  await prisma.workspaceMember.upsert({
+    where: {
+      userId_workspaceId: {
+        userId: owner.id,
+        workspaceId: demoWorkspace.id,
+      },
+    },
+    update: {
+      role: "OWNER",
+      status: "ACTIVE",
+    },
+    create: {
+      userId: owner.id,
+      workspaceId: demoWorkspace.id,
+      role: "OWNER",
+      status: "ACTIVE",
+    },
+  });
+
   await prisma.workspaceInvite.upsert({
     where: { token: "seed-token-demo" },
     update: {

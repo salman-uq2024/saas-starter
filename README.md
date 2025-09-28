@@ -47,6 +47,10 @@ Local demos do not require SMTP. With the dev server running:
 
 Update your display name and timezone from **Settings → Profile** after signing in to see the dashboard personalize in real time.
 
+## Local workspace invites
+
+SMTP is optional during development. Use **Settings → Workspaces → Manage** to send an invite—when email isn’t configured the UI surfaces a shareable accept link (`/invites/<token>`) that teammates can open locally to join the workspace.
+
 ## Environment
 
 All configuration lives in `.env.local` (placeholders committed) and `.env.example`. Key variables:

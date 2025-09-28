@@ -15,6 +15,7 @@
 ## Completed
 1. Added development-only credentials login to unblock local demos and documented the flow in the README.
 2. Extended profile settings (and Prisma schema) to store timezone, ensuring dashboards greet users by their chosen details.
+3. Rounded out workspace management with rename, role management, and invite sharing for teams working locally.
 
 ## Next Actions
 1. Generate baseline Prisma migration(s) from `prisma/schema.prisma`; document workflow for future changes.
