@@ -1,0 +1,41 @@
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+import { FlatCompat } from "@eslint/eslintrc";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+});
+
+const testingLibrary = (await import("eslint-plugin-testing-library")).default;
+
+const eslintConfig = [
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    plugins: {
+      "testing-library": testingLibrary,
+    },
+    settings: {
+      next: {
+        rootDir: ["./"],
+      },
+    },
+    rules: {
+      "testing-library/prefer-screen-queries": "warn",
+      "testing-library/no-await-sync-events": "error",
+      "@next/next/no-img-element": "error",
+    },
+    ignores: [
+      "node_modules/**",
+      ".next/**",
+      "out/**",
+      "build/**",
+      "dist/**",
+      "next-env.d.ts",
+    ],
+  },
+];
+
+export default eslintConfig;

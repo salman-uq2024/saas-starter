@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+:root {
+  --background: 255 255 255;
+  --foreground: 17 25 40;
+  --muted: 238 240 244;
+  --muted-foreground: 100 116 139;
+  --primary: 59 130 246;
+  --primary-foreground: 255 255 255;
+  --success: 16 185 129;
+  --danger: 239 68 68;
+  --card: 255 255 255;
+  --border: 226 232 240;
+  --font-geist-sans: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-geist-mono: "SFMono-Regular", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: 11 15 25;
+    --foreground: 226 232 240;
+    --muted: 30 41 59;
+    --muted-foreground: 148 163 184;
+    --primary: 96 165 250;
+    --primary-foreground: 15 23 42;
+    --card: 15 23 42;
+    --border: 30 41 59;
+  }
+}
+
+body {
+  min-height: 100vh;
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
+  font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--primary));
+  outline-offset: 2px;
+}
+
+@layer components {
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    max-width: 1200px;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
