@@ -37,6 +37,16 @@ A production-ready starter kit bundling marketing pages, passwordless auth, coll
 
 Magic-link emails are logged to the terminal when SMTP credentials are not provided.
 
+## Local auth quickstart
+
+Local demos do not require SMTP. With the dev server running:
+
+1. Visit `http://localhost:3000/login`.
+2. Click **Use demo account** to sign in instantly as `founder@example.com`.
+3. Optionally submit your own email to test the magic-link flow—links render in the terminal when email is disabled.
+
+Update your display name and timezone from **Settings → Profile** after signing in to see the dashboard personalize in real time.
+
 ## Environment
 
 All configuration lives in `.env.local` (placeholders committed) and `.env.example`. Key variables:

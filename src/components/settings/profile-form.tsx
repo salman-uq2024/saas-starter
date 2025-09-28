@@ -8,9 +8,15 @@ import { Alert } from "@/components/ui/alert";
 
 interface ProfileFormProps {
   defaultName: string;
+  defaultTimezone: string;
 }
 
-export function ProfileForm({ defaultName }: ProfileFormProps) {
+const timezoneOptions =
+  typeof Intl !== "undefined" && typeof Intl.supportedValuesOf === "function"
+    ? Intl.supportedValuesOf("timeZone")
+    : ["UTC"];
+
+export function ProfileForm({ defaultName, defaultTimezone }: ProfileFormProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -39,6 +45,25 @@ export function ProfileForm({ defaultName }: ProfileFormProps) {
           Display name
         </label>
         <Input id="profile-name" name="name" defaultValue={defaultName} required maxLength={80} disabled={isPending} />
+      </div>
+      <div className="space-y-2">
+        <label htmlFor="profile-timezone" className="text-sm font-medium text-slate-600">
+          Timezone
+        </label>
+        <Input
+          id="profile-timezone"
+          name="timezone"
+          defaultValue={defaultTimezone}
+          list="timezone-options"
+          disabled={isPending}
+          required
+        />
+        <datalist id="timezone-options">
+          {timezoneOptions.map((timezone) => (
+            <option key={timezone} value={timezone} />
+          ))}
+        </datalist>
+        <p className="text-xs text-slate-500">Search for your city (IANA timezone) to keep notifications and logs accurate.</p>
       </div>
       {error ? <Alert variant="danger">{error}</Alert> : null}
       {message ? <Alert variant="success">{message}</Alert> : null}

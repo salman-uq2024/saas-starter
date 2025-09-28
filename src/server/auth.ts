@@ -8,9 +8,11 @@ import { getPublicEnv, getServerEnv } from "@/lib/env";
 import { sendMail } from "@/server/mailer";
 import { logger } from "@/lib/logger";
 import { ensureWorkspaceForUser } from "@/server/workspaces";
+import CredentialsProvider from "next-auth/providers/credentials";
 
 const serverEnv = getServerEnv();
 const publicEnv = getPublicEnv();
+const devCredentialsEnabled = process.env.NODE_ENV !== "production";
 
 if (!process.env.NEXTAUTH_URL) {
   process.env.NEXTAUTH_URL = serverEnv.APP_URL;
@@ -45,6 +47,34 @@ export const authOptions: NextAuthOptions = {
         }
       },
     }),
+    ...(devCredentialsEnabled
+      ? [
+          CredentialsProvider({
+            id: "dev-login",
+            name: "Development",
+            credentials: {
+              email: { label: "Email", type: "email" },
+            },
+            async authorize(credentials) {
+              const email = credentials?.email?.toString().trim().toLowerCase();
+              if (!email) {
+                throw new Error("Email is required");
+              }
+
+              const user = await prisma.user.upsert({
+                where: { email },
+                update: {},
+                create: {
+                  email,
+                  name: email.split("@")[0] ?? "Demo user",
+                },
+              });
+
+              return user;
+            },
+          }),
+        ]
+      : []),
   ],
   callbacks: {
     session: async ({ session, user }) => {
@@ -54,6 +84,7 @@ export const authOptions: NextAuthOptions = {
         session.user.email = user.email;
         session.user.name = user.name;
         session.user.image = user.image;
+        session.user.timezone = user.timezone ?? undefined;
       }
       return session;
     },

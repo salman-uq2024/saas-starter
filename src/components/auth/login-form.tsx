@@ -14,6 +14,8 @@ export function LoginForm() {
   const [isPending, startTransition] = useTransition();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const devLoginEnabled = process.env.NODE_ENV !== "production";
+  const devEmail = "founder@example.com";
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -37,6 +39,32 @@ export function LoginForm() {
       } else {
         setMessage("Magic link sent. Check your email — in development it appears in the server logs.");
       }
+    });
+  };
+
+  const handleDevLogin = () => {
+    setError(null);
+    setMessage(null);
+    setEmail(devEmail);
+
+    startTransition(async () => {
+      const result = await signIn("dev-login", {
+        email: devEmail,
+        redirect: false,
+        callbackUrl,
+      });
+
+      if (result?.error) {
+        setError("Dev login unavailable. Ensure you are running the app locally.");
+        return;
+      }
+
+      if (result?.url) {
+        window.location.assign(result.url);
+        return;
+      }
+
+      setMessage("Signed in with the demo account.");
     });
   };
 
@@ -66,9 +94,26 @@ export function LoginForm() {
       <Button type="submit" className="w-full" size="lg" isLoading={isPending}>
         Send magic link
       </Button>
+      {devLoginEnabled ? (
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full"
+          size="lg"
+          isLoading={isPending}
+          onClick={handleDevLogin}
+        >
+          Use demo account
+        </Button>
+      ) : null}
       <p className="text-xs text-slate-500">
         No passwords to manage. We email you a one-time link. In development, the link is logged to the terminal for quick testing.
       </p>
+      {devLoginEnabled ? (
+        <p className="text-xs text-slate-500">
+          For local demos, click <strong>Use demo account</strong> to sign in as founder@example.com without SMTP.
+        </p>
+      ) : null}
     </form>
   );
 }

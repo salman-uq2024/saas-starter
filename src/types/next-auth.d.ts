@@ -8,11 +8,13 @@ declare module "next-auth" {
       name?: string | null;
       image?: string | null;
       defaultWorkspaceId?: string;
+      timezone?: string | null;
     };
   }
 
   interface User {
     id: string;
     defaultWorkspaceId?: string | null;
+    timezone?: string | null;
   }
 }

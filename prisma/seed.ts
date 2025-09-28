@@ -2,17 +2,25 @@ import { PrismaClient, WorkspaceRole } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-async function upsertUser(email: string, name: string, workspaceId: string, role: WorkspaceRole) {
+async function upsertUser(
+  email: string,
+  name: string,
+  workspaceId: string,
+  role: WorkspaceRole,
+  timezone: string
+) {
   const user = await prisma.user.upsert({
     where: { email },
     update: {
       name,
       defaultWorkspaceId: workspaceId,
+      timezone,
     },
     create: {
       email,
       name,
       defaultWorkspaceId: workspaceId,
+      timezone,
     },
   });
 
@@ -50,8 +58,8 @@ async function main() {
     },
   });
 
-  const owner = await upsertUser("founder@example.com", "Founding User", workspace.id, "OWNER");
-  const teammate = await upsertUser("teammate@example.com", "Teammate", workspace.id, "ADMIN");
+  const owner = await upsertUser("founder@example.com", "Founding User", workspace.id, "OWNER", "America/New_York");
+  const teammate = await upsertUser("teammate@example.com", "Teammate", workspace.id, "ADMIN", "Europe/London");
 
   await prisma.workspaceInvite.upsert({
     where: { token: "seed-token-demo" },
