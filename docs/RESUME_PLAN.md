@@ -17,10 +17,11 @@
 2. Extended profile settings (and Prisma schema) to store timezone, ensuring dashboards greet users by their chosen details.
 3. Rounded out workspace management with rename, role management, and invite sharing for teams working locally.
 4. Wired Stripe billing test mode (Checkout, Portal, webhook sync) with deterministic stubs when keys are absent.
+5. Hardened CI/test tooling: vitest + Playwright coverage (marketing smoke), packaging zip + SHA for releases.
 
 ## Next Actions
 1. Generate baseline Prisma migration(s) from `prisma/schema.prisma`; document workflow for future changes.
-2. Expand automated tests: add Vitest coverage for env/rate limit utilities and Playwright smoke for auth + workspace creation.
+2. Deepen automated coverage beyond marketing + utility smoke (dashboard flows, Stripe success paths, workspace invites).
 3. Add service fallbacks (mock Stripe/webhook payloads, in-memory mail logging) to allow CI/local runs without secrets.
 4. Document module ownership + runbooks (auth, billing, teams) so future engineers can resume quickly.
 5. Introduce assertions around timezone usage (notifications, audits) and seed coverage to keep future features consistent.

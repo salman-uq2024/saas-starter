@@ -20,4 +20,5 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm run test
+      - run: PLAYWRIGHT_WEB_SERVER=1 npm run test
+      - run: npm run build

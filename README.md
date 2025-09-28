@@ -121,6 +121,7 @@ Run tests locally:
 ```bash
 npm run test
 ```
+> Need the Playwright smoke to hit a running Next server? Run `PLAYWRIGHT_WEB_SERVER=1 npm run test:e2e` to launch the app and exercise the marketing page end-to-end.
 
 ## Packaging
 
