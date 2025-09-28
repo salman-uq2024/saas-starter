@@ -1,146 +1,98 @@
 # SaaS Starter
 
-A production-ready starter kit bundling marketing pages, passwordless auth, collaborative workspaces, billing, documentation, and CI/ops workflows. It is designed for agencies and teams that need to launch client demos or jumpstart paid SaaS projects in hours, not weeks.
+Launch a polished SaaS demo in an afternoon. This starter ships a marketing site, passwordless auth, collaborative workspaces, Stripe billing, and a full runbook so teams can focus on their unique product copy instead of scaffolding.
 
-## Highlights
+## At a glance
 
-- ✅ Marketing site, dashboard, workspace management, settings, and billing flows.
-- ✅ Passwordless authentication with magic links, invite lifecycle, and audit log.
-- ✅ Stripe subscription checkout + customer portal (with deterministic stub when keys are missing).
-- ✅ Prisma + SQLite by default (swap to Postgres) with seed data and audit trail.
-- ✅ Scripts for dev, lint, typecheck, unit + e2e tests, build guard, and packaging.
-- ✅ GitHub Actions CI (ubuntu-latest) that runs lint, typecheck, tests, and build.
-- ✅ Build-time secret guard and rate-limited server actions to keep credentials server-side.
+- Marketing site, dashboard, settings, billing, and invite flows ready to brand.
+- Passwordless auth with a dev-only “Use demo account” button to skip SMTP.
+- Stripe Checkout + Customer Portal with a deterministic stub when keys are absent.
+- Prisma + SQLite by default (swap to Postgres) with seed data and audit trail.
+- CI (GitHub Actions) plus packaging script for handing off a zipped release.
 
-## Quickstart
+## Quickstart (5 minutes)
 
-> Requirements: Node.js 20+, npm 10+, and the `zip` CLI (macOS/Linux default). No external services are required for the demo experience.
+> Prerequisites: Node.js 20+, npm 10+, and the `zip` CLI (bundled with macOS/Linux). No external services required.
 
-1. **Install dependencies**
-   ```bash
-   npm install
-   ```
-2. **Generate the Prisma client**
-   ```bash
-   npm run db:generate
-   ```
-3. **Push the schema & seed demo data**
-   ```bash
-   npx prisma db push
-   npm run db:seed
-   ```
-4. **Start the dev server**
-   ```bash
-   npm run dev
-   ```
-   Visit `http://localhost:3000` to explore the marketing site. Use `founder@example.com` to test the seeded account.
-
-Magic-link emails are logged to the terminal when SMTP credentials are not provided.
-
-## Local auth quickstart
-
-Local demos do not require SMTP. With the dev server running:
-
-1. Visit `http://localhost:3000/login`.
-2. Click **Use demo account** to sign in instantly as `founder@example.com`.
-3. Optionally submit your own email to test the magic-link flow—links render in the terminal when email is disabled.
-
-Update your display name and timezone from **Settings → Profile** after signing in to see the dashboard personalize in real time.
-
-## Local workspace invites
-
-SMTP is optional during development. Use **Settings → Workspaces → Manage** to send an invite—when email isn’t configured the UI surfaces a shareable accept link (`/invites/<token>`) that teammates can open locally to join the workspace.
-
-## Billing test mode
-
-- **Placeholders only:** Without real Stripe test keys the app stays in stub mode—upgrades flip the plan immediately and the billing UI shows the exact link it would have opened.
-- **Test keys provided:** Add `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID_PRO`, and `STRIPE_WEBHOOK_SECRET` (test values) to run true Checkout and Customer Portal flows. Use card `4242 4242 4242 4242`, any future expiry, and any CVC.
-- Webhook signatures are verified when `STRIPE_WEBHOOK_SECRET` is present; leave it unset to keep the deterministic stub.
-
-## Environment
-
-All configuration lives in `.env.local` (placeholders committed) and `.env.example`. Key variables:
-
-| Key | Description |
-| --- | --- |
-| `DATABASE_URL` | SQLite path by default. Swap to Postgres when deploying. |
-| `AUTH_SECRET` | 32+ char secret for NextAuth JWT/session signing. |
-| `STRIPE_SECRET_KEY` | Stripe secret for live billing. Absent = stub mode. |
-| `STRIPE_PRICE_ID_PRO` | Price ID for the Pro subscription. |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook secret (optional). |
-| `APP_URL` | Public app URL used for emails and Stripe redirects. |
-| `NEXT_PUBLIC_APP_NAME` | Display name surfaced on the marketing site. |
-
-The build guard (`npm run build:guard`) fails if any `SERVER_ONLY` env key leaks with a `NEXT_PUBLIC_` prefix in code or env files.
-
-## Scripts
-
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Start Next.js in development mode. |
-| `npm run build` | Guard + compile the production build. |
-| `npm run start` | Run the compiled app. |
-| `npm run lint` | ESLint with Testing Library plugin. |
-| `npm run typecheck` | Strict TypeScript check. |
-| `npm run test` | Runs Vitest unit tests and Playwright e2e smoke test. |
-| `npm run test:unit` | Vitest only. |
-| `npm run test:e2e` | Build + Playwright smoke using Chromium. |
-| `npm run db:generate` | Generate the Prisma client. |
-| `npm run db:seed` | Seed the database with demo data. |
-| `npm run package` | Build and create `dist/saas-starter-YYYY-MM-DD-<gitsha>.zip` + SHA256. |
-
-## Demo data
-
-After seeding you get:
-
-- Workspace **“Acme Inc”** on the Pro plan.
-- Owner: `founder@example.com`
-- Admin: `teammate@example.com`
-- Pending invite: `newhire@example.com` (token `seed-token-demo`).
-
-## Security & Observability
-
-- Rate-limited server actions (`@/lib/rate-limit`) guard invites, billing, and auth flows.
-- Audit log records workspace events (provisioning, invites, billing updates).
-- Build guard halts deployment if server secrets leak to the client bundle.
-- Centralised JSON logger (`@/lib/logger`) used by auth and billing flows.
-- Error boundaries + loading skeletons ensure resilient UX in the dashboard area.
-
-## Billing behaviour
-
-- With Stripe keys present: creates Checkout sessions, portal links, and processes webhooks.
-- Without keys: deterministic stub promotes the workspace to `PRO`, logs the intended redirect, and surfaces a stub portal page.
-
-## Testing & CI
-
-- **Unit tests:** see `tests/unit` for rate limiting and env coverage.
-- **E2E:** `tests/e2e/marketing.spec.ts` exercises the marketing homepage via Playwright.
-- CI workflow lives at `.github/workflows/ci.yml` (ubuntu-latest).
-
-Run tests locally:
 ```bash
-npm run test
+git clone <repo-url>
+cd saas-starter
+npm install
+npm run db:generate
+npx prisma db push
+npm run db:seed
+npm run dev
 ```
-> Need the Playwright smoke to hit a running Next server? Run `PLAYWRIGHT_WEB_SERVER=1 npm run test:e2e` to launch the app and exercise the marketing page end-to-end.
 
-## Packaging
+Visit `http://localhost:3000`, open **Login**, and click **Use demo account** to land on the dashboard as `founder@example.com`. Update your profile name/timezone, switch workspaces, and explore billing—all fully stubbed for local demos.
 
-Create a distributable bundle with:
+## Environment keys
+
+Copy `.env.example` to `.env.local` (placeholders already provided). Update as needed:
+
+| Key | Required? | Notes |
+| --- | --- | --- |
+| `DATABASE_URL` | ✔️ | Defaults to SQLite file (`file:./dev.db`). Point to Postgres for staging/prod. |
+| `AUTH_SECRET` | ✔️ | 32+ char secret (`openssl rand -base64 32`). |
+| `APP_URL` | ✔️ | Base URL used in emails and Stripe redirects (`http://localhost:3000` in dev). |
+| `NEXT_PUBLIC_APP_NAME` | ✔️ | Brand name rendered in the UI. |
+| `AUTH_EMAIL_FROM` | Optional | Email “from” address for magic links (falls back to no-reply@host). |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` | Optional | Configure to deliver real magic links and invites. Absent = terminal preview. |
+| `STRIPE_SECRET_KEY` | Optional | Test/Live secret key. Missing = billing stub mode. |
+| `STRIPE_PRICE_ID_PRO` | Optional | Price ID used during Checkout. |
+| `STRIPE_WEBHOOK_SECRET` | Optional | Enables signature verification + live webhook sync. |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Optional | Only needed when embedding client-side Stripe widgets. |
+| `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MINUTES` | Optional | Adjust server action rate limits (defaults: 50 req / 5 min). |
+
+> Build guard (`npm run build:guard`) blocks deployments if any `SERVER_ONLY` variable leaks via a `NEXT_PUBLIC_` prefix.
+
+## Working with the project
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start Next.js in development mode (App Router). |
+| `npm run lint` | ESLint with zero-warning policy. |
+| `npm run typecheck` | TypeScript strict mode. |
+| `npm run test` | Vitest unit suite + Playwright marketing smoke (headless). |
+| `npm run test:e2e` | Build + Playwright smoke. Set `PLAYWRIGHT_WEB_SERVER=1` to launch the Next server automatically. |
+| `npm run build` | Build guard then production compile. |
+| `npm run start` | Serve the compiled build. |
+| `npm run package` | Produce `dist/saas-starter-<DATE>-<SHA>.zip` plus `.sha256.txt`. |
+
+## Billing test flow
+
+- **Stub mode (default):** If Stripe keys are missing, “Upgrade to Pro” instantly sets the workspace plan to PRO, records an audit log, and shows the portal link you would have opened.
+- **Live test mode:** Add `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID_PRO`, and `STRIPE_WEBHOOK_SECRET` (Stripe test values). Use card `4242 4242 4242 4242`, any future expiry, any CVC. Checkout redirects back to `/billing/success`, and webhook events keep the billing status in sync.
+- Switch back to stub mode any time by removing the keys—no code changes required.
+
+## Troubleshooting
+
+| Issue | Fix |
+| --- | --- |
+| No sign-in email arrives | In dev, copy the magic-link URL from the terminal. In staging/prod, verify SMTP credentials and `AUTH_EMAIL_FROM`. |
+| Build fails with “server-only secrets exposed” | Search for the leaked key and remove any `NEXT_PUBLIC_*` prefix from sensitive env vars. |
+| Stripe upgrade appears stuck | Confirm webhook secret is set (live mode) or keep stub mode enabled; check `/api/billing/webhook` logs. |
+| “Too many requests” when updating settings | Increase `RATE_LIMIT_MAX`/`RATE_LIMIT_WINDOW_MINUTES` or retry after the window resets. |
+
+## What’s seeded?
+
+- Workspace **Acme Inc** (PRO) with owner `founder@example.com` and admin `teammate@example.com`.
+- Workspace **Demo Studio** (FREE) owned by `founder@example.com`.
+- Pending invite for `newhire@example.com` with token `seed-token-demo`.
+
+## Deployment & packaging
+
+Run `npm run build` before deploying (CI mirrors this via `.github/workflows/ci.yml`). The deployment checklist in [`docs/deploy.md`](docs/deploy.md) covers staging vs. production tips, Stripe webhooks, and secret handoff. When you need a distributable artifact for clients or platform teams, execute:
+
 ```bash
 npm run package
 ```
-This command runs the build, zips the project into `dist/saas-starter-<DATE>-<GITSHA>.zip`, and writes `*.sha256.txt` with the checksum.
 
-## Deploy notes
-
-- Swap `DATABASE_URL` to your production database and run `npx prisma migrate deploy`.
-- Set Stripe keys + webhook secret before enabling live billing.
-- The Next.js middleware protects `/dashboard` and `/settings` routes.
-- See `docs/deploy.md` for service-by-service guidance (Vercel, Render, etc.).
+Both the ZIP and SHA256 checksum land in `dist/` for easy distribution.
 
 ## Further reading
 
-- [`docs/install.md`](docs/install.md)
-- [`docs/deploy.md`](docs/deploy.md)
-- [`docs/ops.md`](docs/ops.md)
-- [`docs/loom-script.md`](docs/loom-script.md)
+- [`docs/install.md`](docs/install.md) – step-by-step setup and first login.
+- [`docs/deploy.md`](docs/deploy.md) – staging/production checklist and secret management.
+- [`docs/ops.md`](docs/ops.md) – backup, restore, seeding, and rollback playbooks.
+- [`docs/loom-script.md`](docs/loom-script.md) – narrated two-minute demo path.

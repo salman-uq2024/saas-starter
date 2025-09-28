@@ -1,79 +1,77 @@
-# Deployment Checklist
+# Deployment Guide
 
-Use this checklist to deploy the SaaS Starter to production (Vercel, Render, Fly, etc.).
+Use this checklist when promoting the SaaS Starter to staging or production.
 
-## 1. Environment variables
+## 1. Decide on environments
 
-Set these values in your hosting provider:
+| Environment | Goal | Recommended setup |
+| --- | --- | --- |
+| **Staging** | Internal reviews, demo data | SQLite or lightweight Postgres, Stripe **test** keys, stub email delivery |
+| **Production** | Live customers | Managed Postgres, Stripe **live** keys + webhooks, SMTP provider |
+
+Keep staging and production entirely separate—unique databases, Stripe projects, and env files. Never reuse secrets across environments.
+
+## 2. Provision secrets
+
+Create `.env.staging` / `.env.production` (or use your platform’s secret store) with the following values:
 
 | Key | Notes |
 | --- | --- |
-| `DATABASE_URL` | Point to production Postgres or managed SQLite. |
-| `AUTH_SECRET` | Long random secret (keep private). |
-| `APP_URL` | Public HTTPS URL of the deployment. |
-| `STRIPE_SECRET_KEY` | Stripe test/live secret key. |
-| `STRIPE_PRICE_ID_PRO` | Price used for subscriptions. |
-| `STRIPE_WEBHOOK_SECRET` | From Stripe dashboard (optional but required for live webhooks). |
-| `NEXT_PUBLIC_APP_NAME` | Update for branding. |
+| `DATABASE_URL` | Point staging to a throwaway database; production should use managed Postgres with backups enabled. |
+| `AUTH_SECRET` | 32+ character secret per environment. Regenerate if leaked. |
+| `APP_URL` | Full HTTPS URL (e.g., `https://staging.example.com`). |
+| `NEXT_PUBLIC_APP_NAME` | Matches your branding per environment. |
+| `STRIPE_SECRET_KEY` | Test or live secret key tied to the right Stripe project. |
+| `STRIPE_PRICE_ID_PRO` | Use a staging-specific price when possible. |
+| `STRIPE_WEBHOOK_SECRET` | Per-environment secret from Stripe (required for live mode). |
+| SMTP keys | Configure to deliver real magic links. Staging can point to a sandboxed inbox. |
+| `RATE_LIMIT_MAX`, `RATE_LIMIT_WINDOW_MINUTES` | Adjust if production traffic differs from defaults. |
 
-## 2. Database migrations
+Store secrets in your platform’s vault (Vercel, Render, Fly.io, AWS SSM, etc.). Keep an encrypted handoff note for teammates specifying where each secret lives and who owns the master credentials.
 
-For Postgres:
+## 3. Database migrations
 
 ```bash
+npm run db:generate
 npx prisma migrate deploy
 ```
 
-For SQLite (default) ensure the `DATABASE_URL` points to a writable path on the server.
+For SQLite-based staging, ensure the file path in `DATABASE_URL` is writable. For Postgres, run migrations as part of your CI/CD pipeline before `npm run start`.
 
-## 3. Stripe webhooks
+## 4. Stripe webhooks
 
-Configure a webhook endpoint (e.g., `https://app.example.com/api/billing/webhook`) listening for:
+Create a webhook endpoint per environment pointing to:
 
-- `checkout.session.completed`
-- `customer.subscription.updated`
-- `customer.subscription.deleted`
+```
+https://<env-domain>/api/billing/webhook
+```
 
-If no webhook secret is supplied the handler falls back to stub mode.
+Listen for `checkout.session.completed`, `customer.subscription.updated`, and `customer.subscription.deleted`. Copy the signing secret into `STRIPE_WEBHOOK_SECRET` so the handler verifies every request. Without a secret the app reverts to stub mode automatically.
 
-## 4. Build & runtime
-
-The build guard prevents leaking server secrets. Production build command:
+## 5. Build & release
 
 ```bash
 npm install
 npm run build
 ```
 
-Start command:
+Start the app with `npm run start` (Next.js production server). Make sure your host supports Node.js 20+.
 
-```bash
-npm run start
-```
+CI (`.github/workflows/ci.yml`) already runs lint, typecheck, tests, and build on Ubuntu. Mirror the same steps in your deployment provider or keep CI as a required check before promotion.
 
-## 5. CI pipeline
+## 6. Packaging handoff (optional)
 
-`.github/workflows/ci.yml` runs lint, typecheck, and tests on every push. Mirror the same steps in your deployment pipeline.
-
-## 6. Packaging (optional)
-
-Generate a distributable archive:
+Need a self-contained bundle for clients or offline deployment?
 
 ```bash
 npm run package
 ```
 
-The archive and checksum land in `dist/` for distribution to clients.
+The ZIP and corresponding SHA256 checksum appear in `dist/`. Share both alongside your secret handoff document.
 
-## 7. Monitoring & logging
+## 7. Post-deploy checklist
 
-- JSON logs emitted via `@/lib/logger` (auth, billing, invites).
-- Audit log stored in the `AuditLog` table for workspace-level events.
-- Add your preferred log shipper (Datadog, Logflare, etc.) by piping stdout.
-
-## 8. Hardening tips
-
-- Configure SMTP credentials to deliver real magic links and workspace invites.
-- Swap rate-limit defaults via `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MINUTES`.
-- Consider enabling external email verification or SSO providers by extending NextAuth providers.
-- Enable HTTPS enforcement at your load balancer/CDN.
+- ✅ Smoke-test login and the dashboard using a staging account.
+- ✅ Trigger a Stripe test checkout (staging) or low-value plan (production) and confirm webhooks update billing status.
+- ✅ Send a magic link invite and ensure email delivery works end-to-end.
+- ✅ Capture backups (see [`docs/ops.md`](ops.md)) and verify restore instructions.

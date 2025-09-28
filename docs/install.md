@@ -1,15 +1,15 @@
-# Install Guide
+# Installation Guide
 
-This guide walks through setting up the SaaS Starter on a fresh machine.
+Get the starter running on a new machine in a few minutes.
 
 ## 1. Prerequisites
 
-- Node.js 20+
-- npm 10+
-- `zip` CLI (included with macOS/Linux)
-- Optional: Stripe test keys if you want to exercise live checkout flows.
+- Node.js 20 or later
+- npm 10 or later
+- `zip` CLI (bundled with macOS/Linux, `choco install zip` on Windows)
+- Optional: Stripe test keys if you want to trial the live Checkout flow
 
-## 2. Clone and install
+## 2. Clone & install
 
 ```bash
 git clone <repo-url>
@@ -18,36 +18,38 @@ npm install
 npm run db:generate
 ```
 
-## 3. Environment variables
+## 3. Configure environment
 
-Copy `.env.example` to `.env.local` (the repo already ships a placeholder `.env.local`). Adjust values as needed:
+Copy `.env.example` to `.env.local` (the repo already ships placeholder values) and adjust the keys that matter:
 
-- **AUTH_SECRET** – generate a random 32+ character string (`openssl rand -base64 32`).
-- **APP_URL** – the base URL of your deployment.
-- **STRIPE_*** keys – optional; leave blank for stubbed billing.
+| Key | Action |
+| --- | --- |
+| `AUTH_SECRET` | Generate a 32+ character secret (`openssl rand -base64 32`). |
+| `APP_URL` | Use `http://localhost:3000` locally; set your staging/prod domain later. |
+| `DATABASE_URL` | Defaults to SQLite. Swap to Postgres when you introduce a managed database. |
+| Stripe keys | Leave empty for stub mode. Add Stripe test keys to exercise real billing. |
+| SMTP settings | Skip for local demos; fill in when you need real magic-link emails. |
 
-## 4. Database
-
-SQLite is the default. Push the schema and seed demo data:
+## 4. Prepare the database
 
 ```bash
 npx prisma db push
 npm run db:seed
 ```
 
-To use Postgres, edit `prisma/schema.prisma` (`provider = "postgresql"`) and set `DATABASE_URL` accordingly, then run `npx prisma migrate dev`.
+SQLite lives alongside the code for development. To use Postgres, change the provider in `prisma/schema.prisma`, set `DATABASE_URL`, and run `npx prisma migrate dev`.
 
-## 5. Run locally
+## 5. First login
 
 ```bash
 npm run dev
 ```
 
-- Marketing site: `http://localhost:3000`
-- Dashboard: sign in with any email (magic link prints to the terminal).
-- Seeded owner: `founder@example.com` (auto-provisioned workspace).
+Open `http://localhost:3000/login` and click **Use demo account**. You will land on the dashboard as `founder@example.com` with two seeded workspaces, pending invites, and billing data ready to explore.
 
-## 6. Tests & QA
+Prefer a magic link? Enter any email address, then copy the URL printed to your terminal and paste it into the browser.
+
+## 6. Quality checks
 
 ```bash
 npm run lint
@@ -55,10 +57,10 @@ npm run typecheck
 npm run test
 ```
 
-Playwright downloads Chromium automatically (or run `npx playwright install --with-deps chromium`).
+The Playwright smoke test runs headless. If you need the bundled Chromium ahead of time, execute `npx playwright install --with-deps chromium`.
 
 ## 7. Next steps
 
-- Update copy and styling on `src/app/(marketing)/page.tsx`.
-- Replace placeholders in `.env.local`.
-- Review deployment checklist in `docs/deploy.md`.
+- Replace placeholder copy and branding in `src/app/(marketing)` and dashboard headers.
+- Review deployment guidance in [`docs/deploy.md`](deploy.md).
+- Familiarise yourself with day-to-day operations in [`docs/ops.md`](ops.md).

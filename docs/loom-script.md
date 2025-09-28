@@ -1,26 +1,27 @@
-# 2-Minute Loom Script
+# 2-Minute Demo Script
 
-> Goal: demonstrate the marketing site, auth flow, workspace management, and billing stub in under two minutes.
+Use this script for a Loom or live screen-share. Keep the pace brisk—about 15–20 seconds per section.
 
-1. **Hook (0:00 – 0:15)**
-   - “This is the SaaS Starter – everything you need to launch a production-grade SaaS in a weekend.”
-   - Scroll the hero, highlight the CTA and sections (features, security, pricing).
+## 0:00 – 0:20 · Welcome & hook
+- Start on `https://localhost:3000/` (marketing homepage).
+- “This is the SaaS Starter—a complete SaaS shell with marketing, auth, teams, and billing so you can launch demos immediately.”
+- Scroll the hero and features rows, highlight the primary “Start the demo” button.
 
-2. **Auth & dashboard (0:15 – 0:45)**
-   - Click “Start the demo”, enter `founder@example.com`, mention magic links log to the terminal.
-   - Switch to inbox/log (or describe the console link), then land on the dashboard.
-   - Call out metrics cards, invite list, and audit trail.
+## 0:20 – 0:55 · Sign in & dashboard
+- Click **Start the demo** → **Use demo account**. Mention that magic links still work and log to the terminal when SMTP is missing.
+- Land on the dashboard. Call out the welcome header, metrics cards (Plan, Members, Invites, Billing status), and the audit-friendly layout.
 
-3. **Workspace management (0:45 – 1:15)**
-   - Open `Settings → Workspaces`, show the seeded workspace tiles.
-   - Jump into a workspace detail page, point out invite form and pending invites.
-   - Mention rate limiting + audit logging for every change.
+## 0:55 – 1:15 · Workspace management
+- Open **Settings → Workspaces**.
+- Point to the list of workspaces (seeded “Acme Inc” and “Demo Studio”) and the create workspace form.
+- Dive into a workspace detail page: show member role dropdowns, invite form, and pending invites with shareable links for local demos.
 
-4. **Billing (1:15 – 1:40)**
-   - Navigate to `Settings → Billing`, highlight current plan + status badge.
-   - Click “Upgrade to Pro” – explain live mode uses Stripe Checkout, stub mode upgrades instantly for demos.
+## 1:15 – 1:40 · Billing overview
+- Navigate to **Settings → Billing**.
+- Highlight the plan badge, status chip, and the two buttons (Upgrade/Manage subscription).
+- Explain stub mode vs live mode: without Stripe keys, upgrades happen instantly for demos; add Stripe test keys to launch real Checkout and the customer portal.
 
-5. **Docs & packaging (1:40 – 2:00)**
-   - Open `README` or `docs/` in the repo, point to install/deploy notes.
-   - Mention `npm run package` producing a versioned ZIP + SHA256 for client handoff.
-   - Close with “Clone, seed, and you’re ready to demo in minutes.”
+## 1:40 – 2:00 · Docs, packaging, and CTA
+- Flip to the repository `README` or `docs/` folder.
+- Call out install, deploy, and ops runbooks plus the packaging script (`npm run package`) that produces a ZIP + SHA for client handoff.
+- Close with “Clone, seed, click ‘Use demo account’, and you have a ready-to-show SaaS experience.”

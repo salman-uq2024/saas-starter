@@ -10,7 +10,6 @@
 - No checked-in Prisma migrations; onboarding to Postgres/cloud DB will stall without generated migrations.
 - Test coverage thin: only marketing e2e flow and two unit specs; no smoke tests for dashboard/auth/billing critical paths.
 - Stripe + email paths rely on live services; need deterministic mocks/stubs for local + CI confidence beyond guard rails.
-- Docs limited to ops/install; lacking architecture, auth/billing walkthroughs, and troubleshooting guidance.
 
 ## Completed
 1. Added development-only credentials login to unblock local demos and documented the flow in the README.
@@ -23,5 +22,4 @@
 1. Generate baseline Prisma migration(s) from `prisma/schema.prisma`; document workflow for future changes.
 2. Deepen automated coverage beyond marketing + utility smoke (dashboard flows, Stripe success paths, workspace invites).
 3. Add service fallbacks (mock Stripe/webhook payloads, in-memory mail logging) to allow CI/local runs without secrets.
-4. Document module ownership + runbooks (auth, billing, teams) so future engineers can resume quickly.
-5. Introduce assertions around timezone usage (notifications, audits) and seed coverage to keep future features consistent.
+4. Introduce assertions around timezone usage (notifications, audits) and seed coverage to keep future features consistent.
