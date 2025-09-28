@@ -30,6 +30,13 @@ type PublicEnv = z.infer<typeof publicSchema>;
 let serverEnvCache: ServerEnv | null = null;
 let publicEnvCache: PublicEnv | null = null;
 
+function sanitize(value: string | undefined): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  return value.trim() === "" ? undefined : value;
+}
+
 function parseServerEnv(): ServerEnv {
   if (typeof window !== "undefined") {
     throw new Error("getServerEnv() must not run in the browser");
@@ -40,19 +47,19 @@ function parseServerEnv(): ServerEnv {
   }
 
   const rawServerEnv: Record<string, string | undefined> = {
-    DATABASE_URL: process.env.DATABASE_URL,
-    AUTH_SECRET: process.env.AUTH_SECRET,
-    AUTH_EMAIL_FROM: process.env.AUTH_EMAIL_FROM,
-    SMTP_HOST: process.env.SMTP_HOST,
-    SMTP_PORT: process.env.SMTP_PORT,
-    SMTP_USER: process.env.SMTP_USER,
-    SMTP_PASSWORD: process.env.SMTP_PASSWORD,
-    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
-    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
-    STRIPE_PRICE_ID_PRO: process.env.STRIPE_PRICE_ID_PRO,
-    APP_URL: process.env.APP_URL,
-    RATE_LIMIT_MAX: process.env.RATE_LIMIT_MAX,
-    RATE_LIMIT_WINDOW_MINUTES: process.env.RATE_LIMIT_WINDOW_MINUTES,
+    DATABASE_URL: sanitize(process.env.DATABASE_URL),
+    AUTH_SECRET: sanitize(process.env.AUTH_SECRET),
+    AUTH_EMAIL_FROM: sanitize(process.env.AUTH_EMAIL_FROM),
+    SMTP_HOST: sanitize(process.env.SMTP_HOST),
+    SMTP_PORT: sanitize(process.env.SMTP_PORT),
+    SMTP_USER: sanitize(process.env.SMTP_USER),
+    SMTP_PASSWORD: sanitize(process.env.SMTP_PASSWORD),
+    STRIPE_SECRET_KEY: sanitize(process.env.STRIPE_SECRET_KEY),
+    STRIPE_WEBHOOK_SECRET: sanitize(process.env.STRIPE_WEBHOOK_SECRET),
+    STRIPE_PRICE_ID_PRO: sanitize(process.env.STRIPE_PRICE_ID_PRO),
+    APP_URL: sanitize(process.env.APP_URL),
+    RATE_LIMIT_MAX: sanitize(process.env.RATE_LIMIT_MAX),
+    RATE_LIMIT_WINDOW_MINUTES: sanitize(process.env.RATE_LIMIT_WINDOW_MINUTES),
   };
 
   const parsed = serverSchema.safeParse(rawServerEnv);
@@ -72,8 +79,8 @@ function parsePublicEnv(): PublicEnv {
   }
 
   const rawPublicEnv: Record<string, string | undefined> = {
-    NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME,
-    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    NEXT_PUBLIC_APP_NAME: sanitize(process.env.NEXT_PUBLIC_APP_NAME),
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: sanitize(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY),
   };
 
   const parsed = publicSchema.safeParse(rawPublicEnv);
