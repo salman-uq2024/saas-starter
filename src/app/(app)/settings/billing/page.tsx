@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
 import { getServerAuthSession } from "@/server/auth";
-import { getWorkspaceBillingSummary } from "@/server/billing";
+import { getBillingRuntimeInfo, getWorkspaceBillingSummary } from "@/server/billing";
 import { listWorkspacesForUser } from "@/server/workspaces";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BillingActions } from "@/components/settings/billing-actions";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Alert } from "@/components/ui/alert";
 
 export default async function BillingSettingsPage() {
   const session = await getServerAuthSession();
@@ -24,6 +25,8 @@ export default async function BillingSettingsPage() {
   if (!workspace) {
     return <EmptyState title="Workspace missing" description="The workspace could not be found." />;
   }
+
+  const billingRuntime = getBillingRuntimeInfo();
 
   return (
     <div className="space-y-6">
@@ -44,10 +47,21 @@ export default async function BillingSettingsPage() {
               <span className="text-xs text-slate-500">Subscription ID: {workspace.stripeSubscriptionId}</span>
             ) : null}
           </div>
-          <BillingActions workspaceId={workspace.id} plan={workspace.plan} />
+          <BillingActions
+            workspaceId={workspace.id}
+            plan={workspace.plan}
+            billingMode={billingRuntime.mode}
+          />
           <p className="text-xs text-slate-500">
-            Stripe keys optional: without them we run in stub mode, update workspace plan instantly, and log the redirect for demos.
+            Stripe keys optional: without them we run in stub mode, update workspace plan instantly, and log the intended
+            redirect for demos.
           </p>
+          {billingRuntime.mode === "live" && !billingRuntime.webhookConfigured ? (
+            <Alert className="text-xs">
+              Webhook secret missing. Events will not sync subscription status—set `STRIPE_WEBHOOK_SECRET` to enable
+              signature verification.
+            </Alert>
+          ) : null}
         </CardContent>
       </Card>
     </div>

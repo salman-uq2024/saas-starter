@@ -31,7 +31,7 @@ export async function startCheckoutAction(formData: FormData): Promise<ActionRes
   }
 
   try {
-    enforceRateLimit(`billing:checkout:${user.id}`);
+    await enforceRateLimit(`billing:checkout:${user.id}`);
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Rate limit exceeded" };
   }
@@ -65,7 +65,7 @@ export async function startBillingPortalAction(formData: FormData): Promise<Acti
   }
 
   try {
-    enforceRateLimit(`billing:portal:${user.id}`);
+    await enforceRateLimit(`billing:portal:${user.id}`);
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Rate limit exceeded" };
   }

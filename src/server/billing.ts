@@ -14,6 +14,16 @@ const stripeClient = (() => {
   });
 })();
 
+export function getBillingRuntimeInfo() {
+  const env = getServerEnv();
+  const hasSecret = Boolean(env.STRIPE_SECRET_KEY && env.STRIPE_PRICE_ID_PRO);
+  const hasWebhook = Boolean(env.STRIPE_WEBHOOK_SECRET);
+  return {
+    mode: hasSecret && stripeClient ? ("live" as const) : ("stub" as const),
+    webhookConfigured: hasWebhook && hasSecret && Boolean(stripeClient),
+  };
+}
+
 type CheckoutResult = {
   url: string;
   mode: "live" | "stub";
@@ -32,6 +42,30 @@ async function ensureWorkspace(workspaceId: string) {
     throw new Error("Workspace not found");
   }
   return workspace;
+}
+
+async function findWorkspaceIdByCustomer(customer: string | Stripe.Customer | null | undefined) {
+  const customerId = typeof customer === "string" ? customer : customer?.id;
+  if (!customerId) {
+    return null;
+  }
+  const workspace = await prisma.workspace.findFirst({
+    where: { stripeCustomerId: customerId },
+    select: { id: true },
+  });
+  return workspace?.id ?? null;
+}
+
+async function findWorkspaceIdBySubscription(subscription: string | Stripe.Subscription | null | undefined) {
+  const subscriptionId = typeof subscription === "string" ? subscription : subscription?.id;
+  if (!subscriptionId) {
+    return null;
+  }
+  const workspace = await prisma.workspace.findFirst({
+    where: { stripeSubscriptionId: subscriptionId },
+    select: { id: true },
+  });
+  return workspace?.id ?? null;
 }
 
 async function ensureStripeCustomer(workspaceId: string): Promise<string> {
@@ -84,6 +118,8 @@ export async function createCheckoutSession(params: {
       data: {
         plan: "PRO",
         billingStatus: "ACTIVE",
+        stripeSubscriptionId: `stub_sub_${workspace.id}`,
+        subscriptionStatusChangedAt: new Date(),
       },
     });
 
@@ -197,9 +233,34 @@ export async function handleStripeWebhook(rawBody: string | Buffer, signature?: 
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
-      const workspaceId = session.metadata?.workspaceId ?? (session.subscription && typeof session.subscription === "string" ? undefined : undefined);
-      const subscriptionId = session.subscription as string | undefined;
-      const customerId = session.customer as string | undefined;
+      let workspaceId = session.metadata?.workspaceId ?? null;
+      const subscriptionId = (typeof session.subscription === "string"
+        ? session.subscription
+        : session.subscription?.id) ?? null;
+      const customerId = (typeof session.customer === "string"
+        ? session.customer
+        : session.customer?.id) ?? null;
+
+      if (!workspaceId && subscriptionId && stripeClient) {
+        try {
+          const subscription = await stripeClient.subscriptions.retrieve(subscriptionId, {
+            expand: ["customer"],
+          });
+          workspaceId = (subscription.metadata?.workspaceId as string | undefined) ?? null;
+          if (!workspaceId) {
+            workspaceId = await findWorkspaceIdByCustomer(subscription.customer as string | Stripe.Customer);
+          }
+        } catch (error) {
+          logger.warn("Failed to retrieve subscription metadata", {
+            subscriptionId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+
+      if (!workspaceId && customerId) {
+        workspaceId = await findWorkspaceIdByCustomer(customerId);
+      }
 
       if (workspaceId && subscriptionId) {
         await prisma.workspace.update({
@@ -223,7 +284,13 @@ export async function handleStripeWebhook(rawBody: string | Buffer, signature?: 
     case "customer.subscription.updated":
     case "customer.subscription.deleted": {
       const subscription = event.data.object as Stripe.Subscription;
-      const workspaceId = subscription.metadata?.workspaceId;
+      let workspaceId: string | null = (subscription.metadata?.workspaceId as string | undefined) ?? null;
+      if (!workspaceId) {
+        workspaceId = await findWorkspaceIdBySubscription(subscription.id);
+      }
+      if (!workspaceId) {
+        workspaceId = await findWorkspaceIdByCustomer(subscription.customer as string | Stripe.Customer);
+      }
       if (workspaceId) {
         const status =
           subscription.status === "active"
@@ -237,6 +304,7 @@ export async function handleStripeWebhook(rawBody: string | Buffer, signature?: 
             billingStatus: status,
             stripeSubscriptionId: subscription.id,
             subscriptionStatusChangedAt: new Date(),
+            plan: status === "CANCELED" ? "FREE" : undefined,
           },
         });
         await recordAuditLog({

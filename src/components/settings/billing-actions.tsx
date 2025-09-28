@@ -8,11 +8,14 @@ import { Alert } from "@/components/ui/alert";
 interface BillingActionsProps {
   workspaceId: string;
   plan: string;
+  billingMode: "live" | "stub";
 }
 
-export function BillingActions({ workspaceId, plan }: BillingActionsProps) {
+export function BillingActions({ workspaceId, plan, billingMode }: BillingActionsProps) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const isPro = plan === "PRO";
+  const inStubMode = billingMode === "stub";
 
   const handleCheckout = () => {
     setError(null);
@@ -46,13 +49,43 @@ export function BillingActions({ workspaceId, plan }: BillingActionsProps) {
     <div className="space-y-3">
       {error ? <Alert variant="danger">{error}</Alert> : null}
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Button onClick={handleCheckout} isLoading={isPending} className="w-full sm:w-auto">
-          {plan === "PRO" ? "Manage subscription" : "Upgrade to Pro"}
-        </Button>
-        <Button onClick={handlePortal} variant="secondary" isLoading={isPending} className="w-full sm:w-auto">
-          Open billing portal
-        </Button>
+        {isPro ? (
+          <>
+            <Button onClick={handlePortal} isLoading={isPending} className="w-full sm:w-auto">
+              Manage subscription
+            </Button>
+            <Button
+              onClick={handleCheckout}
+              variant="secondary"
+              isLoading={isPending}
+              className="w-full sm:w-auto"
+              disabled={inStubMode}
+            >
+              New checkout session
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button onClick={handleCheckout} isLoading={isPending} className="w-full sm:w-auto">
+              Upgrade to Pro
+            </Button>
+            <Button
+              onClick={handlePortal}
+              variant="secondary"
+              className="w-full sm:w-auto"
+              disabled
+            >
+              Manage subscription
+            </Button>
+          </>
+        )}
       </div>
+      {inStubMode ? (
+        <Alert>
+          Running in Stripe stub mode. Add test keys for `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID_PRO`, and
+          `STRIPE_WEBHOOK_SECRET` to enable live checkout and portal redirects.
+        </Alert>
+      ) : null}
     </div>
   );
 }

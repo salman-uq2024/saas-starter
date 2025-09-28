@@ -51,6 +51,12 @@ Update your display name and timezone from **Settings → Profile** after signin
 
 SMTP is optional during development. Use **Settings → Workspaces → Manage** to send an invite—when email isn’t configured the UI surfaces a shareable accept link (`/invites/<token>`) that teammates can open locally to join the workspace.
 
+## Billing test mode
+
+- **Placeholders only:** Without real Stripe test keys the app stays in stub mode—upgrades flip the plan immediately and the billing UI shows the exact link it would have opened.
+- **Test keys provided:** Add `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID_PRO`, and `STRIPE_WEBHOOK_SECRET` (test values) to run true Checkout and Customer Portal flows. Use card `4242 4242 4242 4242`, any future expiry, and any CVC.
+- Webhook signatures are verified when `STRIPE_WEBHOOK_SECRET` is present; leave it unset to keep the deterministic stub.
+
 ## Environment
 
 All configuration lives in `.env.local` (placeholders committed) and `.env.example`. Key variables:
