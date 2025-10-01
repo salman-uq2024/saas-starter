@@ -7,6 +7,7 @@
     "build": "npm run build:guard && next build",
     "build:guard": "node scripts/build-guard.mjs",
     "start": "next start",
+    "setup": "npm run db:generate && cross-env RUST_LOG=trace npx prisma db push && npm run db:seed",
     "lint": "next lint --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "npm run test:unit && npm run test:e2e",

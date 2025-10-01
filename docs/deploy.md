@@ -1,6 +1,16 @@
 # Deployment Guide
 
-Use this checklist when promoting the SaaS Starter to staging or production.
+Use this checklist when preparing the SaaS Starter for demo, staging, or production environments.
+
+## Demo deployment (Vercel Hobby)
+
+1. **Create a project** – Log in to Vercel, click *New Project*, and import the GitHub repository.
+2. **Set environment variables** – In the *Environment Variables* section add the keys from `.env.example`. For a demo you can leave Stripe/SMTP keys blank; set `APP_URL` to `https://<your-project>.vercel.app`.
+3. **Configure build** – Install command `npm install`; build command `npm run build`; output directory defaults to `.next`.
+4. **Deploy** – Click *Deploy*. Once live, visit `/login` and choose **Use demo account** to verify the seeded workspace.
+5. **Rate-limit safeguards** – The default limit (60 req / 5 min) protects the Hobby instance. Adjust via `RATE_LIMIT_MAX` or `RATE_LIMIT_WINDOW_MINUTES` if you expect higher traffic.
+
+Vercel previews automatically re-run CI steps (install, lint, test, build). Promote a preview to production once checks pass.
 
 ## 1. Decide on environments
 

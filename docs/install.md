@@ -15,7 +15,6 @@ Get the starter running on a new machine in a few minutes.
 git clone <repo-url>
 cd saas-starter
 npm install
-npm run db:generate
 ```
 
 ## 3. Configure environment
@@ -33,11 +32,10 @@ Copy `.env.example` to `.env.local` (the repo already ships placeholder values) 
 ## 4. Prepare the database
 
 ```bash
-npx prisma db push
-npm run db:seed
+npm run setup
 ```
 
-SQLite lives alongside the code for development. To use Postgres, change the provider in `prisma/schema.prisma`, set `DATABASE_URL`, and run `npx prisma migrate dev`.
+The `setup` script generates the Prisma client, syncs the schema, and seeds demo data. SQLite lives alongside the code for development. To use Postgres, change the provider in `prisma/schema.prisma`, set `DATABASE_URL`, and run `npx prisma migrate dev` instead of SQLite seeding.
 
 ## 5. First login
 
