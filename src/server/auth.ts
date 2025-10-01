@@ -20,8 +20,9 @@ if (!process.env.NEXTAUTH_URL) {
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
-  session: { strategy: "database" },
+  session: { strategy: "jwt" },
   secret: serverEnv.AUTH_SECRET,
+  debug: process.env.NODE_ENV !== "production",
   pages: {
     signIn: "/login",
     verifyRequest: "/auth/verify",
@@ -77,16 +78,50 @@ export const authOptions: NextAuthOptions = {
       : []),
   ],
   callbacks: {
-    session: async ({ session, user }) => {
-      if (session.user) {
-        session.user.id = user.id;
-        session.user.defaultWorkspaceId = user.defaultWorkspaceId ?? undefined;
-        session.user.email = user.email;
-        session.user.name = user.name;
-        session.user.image = user.image;
-        session.user.timezone = user.timezone ?? undefined;
+    session: async ({ session, token }) => {
+      if (session.user && token) {
+        session.user.id = typeof token.id === "string" ? token.id : "";
+        session.user.defaultWorkspaceId =
+          typeof token.defaultWorkspaceId === "string" ? token.defaultWorkspaceId : undefined;
+        session.user.email = typeof token.email === "string" ? token.email : session.user.email;
+        session.user.name = typeof token.name === "string" ? token.name : session.user.name;
+        session.user.image = typeof token.picture === "string" ? token.picture : session.user.image;
+        session.user.timezone = typeof token.timezone === "string" ? token.timezone : undefined;
       }
       return session;
+    },
+    jwt: async ({ token, user }) => {
+      if (user) {
+        token.id = user.id;
+        token.email = user.email;
+        token.name = user.name;
+        token.picture = user.image ?? undefined;
+        token.timezone = user.timezone ?? undefined;
+        token.defaultWorkspaceId = user.defaultWorkspaceId ?? undefined;
+        return token;
+      }
+      if (!token.id && token.email) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: token.email },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            image: true,
+            timezone: true,
+            defaultWorkspaceId: true,
+          },
+        });
+        if (dbUser) {
+          token.id = dbUser.id;
+          token.email = dbUser.email;
+          token.name = dbUser.name ?? undefined;
+          token.picture = dbUser.image ?? undefined;
+          token.timezone = dbUser.timezone ?? undefined;
+          token.defaultWorkspaceId = dbUser.defaultWorkspaceId ?? undefined;
+        }
+      }
+      return token;
     },
   },
   events: {

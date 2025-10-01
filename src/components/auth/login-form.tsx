@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { signIn } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert } from "@/components/ui/alert";
@@ -13,6 +13,7 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
   const devLoginEnabled = process.env.NODE_ENV !== "production";
   const devEmail = "founder@example.com";
@@ -59,12 +60,15 @@ export function LoginForm() {
         return;
       }
 
-      if (result?.url) {
-        window.location.assign(result.url);
+      const fallbackUrl = callbackUrl || "/";
+      const nextUrl = result?.url ?? fallbackUrl;
+
+      if (nextUrl.startsWith("http")) {
+        window.location.assign(nextUrl);
         return;
       }
 
-      setMessage("Signed in with the demo account.");
+      router.replace(nextUrl);
     });
   };
 
