@@ -75,11 +75,10 @@ export default function MarketingPage() {
               New: Billing + audit logs included
             </span>
             <h1 className="text-balance text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl dark:text-slate-50">
-              {publicEnv.NEXT_PUBLIC_APP_NAME}: the fastest path to a production SaaS
+              SaaS Starter – Built by Salman
             </h1>
             <p className="text-lg text-slate-600 dark:text-slate-300">
-              Ship marketing pages, auth, dashboard, teams, billing, and docs in a single cohesive starter kit. Opinionated where
-              it matters, flexible where it counts.
+              Full-stack SaaS boilerplate with auth, billing, and workspaces
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Link href="/login" className="sm:w-auto">

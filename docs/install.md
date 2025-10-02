@@ -1,64 +1,104 @@
 # Installation Guide
 
-Get the starter running on a new machine in a few minutes.
+Get this SaaS starter up and running on your machine in just a few minutes. This guide assumes basic familiarity with Node.js and Git.
 
-## 1. Prerequisites
+## Prerequisites
 
-- Node.js 20 or later
-- npm 10 or later
-- `zip` CLI (bundled with macOS/Linux, `choco install zip` on Windows)
-- Optional: Stripe test keys if you want to trial the live Checkout flow
+Before starting, ensure you have the following installed:
 
-## 2. Clone & install
+- **Node.js**: Version 20 or later. Download from [nodejs.org](https://nodejs.org/).
+- **npm**: Version 10 or later (comes with Node.js). Verify with `npm --version`.
+- **Git**: For cloning the repository. Install from [git-scm.com](https://git-scm.com/).
+- **zip CLI**: Bundled with macOS/Linux; on Windows, install via `choco install zip` (requires Chocolatey).
+- **Optional**: Stripe test keys (from [dashboard.stripe.com/test/apikeys](https://dashboard.stripe.com/test/apikeys)) to enable live billing simulations during demos.
+
+For database options:
+- **SQLite** (default for development): No additional setup needed.
+- **PostgreSQL** (recommended for production): Install a client like pgAdmin or use a managed service (e.g., Supabase, Vercel Postgres).
+
+## Step 1: Clone the Repository and Install Dependencies
+
+Open your terminal and run:
 
 ```bash
-git clone <repo-url>
+git clone <your-repo-url> saas-starter
 cd saas-starter
 npm install
 ```
 
-## 3. Configure environment
+This installs all required packages, including Next.js, Prisma, NextAuth, and Stripe integrations.
 
-Copy `.env.example` to `.env.local` (the repo already ships placeholder values) and adjust the keys that matter:
+## Step 2: Configure Environment Variables
 
-| Key | Action |
-| --- | --- |
-| `AUTH_SECRET` | Generate a 32+ character secret (`openssl rand -base64 32`). |
-| `APP_URL` | Use `http://localhost:3000` locally; set your staging/prod domain later. |
-| `DATABASE_URL` | Defaults to SQLite. Swap to Postgres when you introduce a managed database. |
-| Stripe keys | Leave empty for stub mode. Add Stripe test keys to exercise real billing. |
-| SMTP settings | Skip for local demos; fill in when you need real magic-link emails. |
+Copy the example environment file and customize it:
 
-## 4. Prepare the database
+```bash
+cp .env.example .env.local
+```
+
+Edit `.env.local` with your values. Key variables include:
+
+| Key                  | Description | Example/Default |
+|----------------------|-------------|-----------------|
+| `AUTH_SECRET`       | A secure secret for signing JWTs (generate with `openssl rand -base64 32`). Required for authentication. | `your-32-char-secret` |
+| `APP_URL`           | Base URL of your app. Use `http://localhost:3000` for local development. | `http://localhost:3000` |
+| `DATABASE_URL`      | Database connection string. Defaults to local SQLite (`file:./dev.db`). For Postgres: `postgresql://user:pass@localhost:5432/dbname`. | `file:./dev.db` |
+| `STRIPE_SECRET_KEY` | Stripe secret key for billing (optional for stub mode). | `sk_test_...` |
+| `STRIPE_PRICE_ID_PRO` | ID of your Pro plan price in Stripe (optional). | `price_123...` |
+| `SMTP_*`            | SMTP settings for email (optional for local demos; required for magic links). | See `.env.example` |
+
+For full details, refer to the [Environment Validation](../src/lib/env.ts) in the codebase. Invalid configs will throw errors on startup.
+
+## Step 3: Set Up the Database
+
+Run the setup script to generate the Prisma client, apply the schema, and seed demo data:
 
 ```bash
 npm run setup
 ```
 
-The `setup` script generates the Prisma client, syncs the schema, and seeds demo data. SQLite lives alongside the code for development. To use Postgres, change the provider in `prisma/schema.prisma`, set `DATABASE_URL`, and run `npx prisma migrate dev` instead of SQLite seeding.
+- This creates tables based on [`prisma/schema.prisma`](prisma/schema.prisma).
+- Seeds sample data: A demo user (`founder@example.com`), two workspaces ("Acme Inc", "Demo Studio"), and pending invites.
+- For PostgreSQL: Update `provider = "postgresql"` in `schema.prisma`, set `DATABASE_URL`, then run `npx prisma migrate dev` instead of the setup script.
 
-## 5. First login
+Verify the database: Check `dev.db` (SQLite) or connect to your Postgres instance.
+
+## Step 4: Start the Development Server
+
+Launch the app:
 
 ```bash
 npm run dev
 ```
 
-Open `http://localhost:3000/login` and click **Use demo account**. You will land on the dashboard as `founder@example.com` with two seeded workspaces, pending invites, and billing data ready to explore.
+- The server runs on `http://localhost:3000`.
+- Open `/login` in your browser.
+- Click **Use demo account** to sign in as `founder@example.com` (no password needed).
+- Alternatively, enter any email for a magic link (printed to terminal if SMTP is unset).
 
-Prefer a magic link? Enter any email address, then copy the URL printed to your terminal and paste it into the browser.
+You'll land on the dashboard with access to seeded workspaces, billing stubs, and settings.
 
-## 6. Quality checks
+## Step 5: Run Quality Checks
+
+Ensure everything is set up correctly:
 
 ```bash
-npm run lint
-npm run typecheck
-npm run test
+npm run lint    # Checks code style (ESLint)
+npm run typecheck  # Validates TypeScript
+npm run test    # Runs unit (Vitest) and E2E (Playwright) tests
 ```
 
-The Playwright smoke test runs headless. If you need the bundled Chromium ahead of time, execute `npx playwright install --with-deps chromium`.
+- If Playwright needs Chromium: Run `npx playwright install --with-deps`.
+- All checks should pass for a healthy setup. See [Testing Suite](features.md#testing-suite) for details.
 
-## 7. Next steps
+## Next Steps
 
-- Replace placeholder copy and branding in `src/app/(marketing)` and dashboard headers.
-- Review deployment guidance in [`docs/deploy.md`](deploy.md).
-- Familiarise yourself with day-to-day operations in [`docs/ops.md`](ops.md).
+- **Customize**: Update branding in `src/app/(marketing)/` and dashboard components.
+- **Billing Demo**: Add Stripe test keys to `.env.local` and upgrade a workspace to see Checkout flow.
+- **Deploy**: Follow the [Deployment Guide](deploy.md) for Vercel or other platforms.
+- **Explore Features**: Dive into [Key Features](features.md), [Architecture](architecture.md), and [Security](security.md).
+- **Operations**: Review the [Operations Runbook](ops.md) for maintenance.
+
+For troubleshooting, check console logs or the [Security Best Practices](security.md). Questions? See the [README](../README.md).
+
+Happy building!

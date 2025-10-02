@@ -13,7 +13,7 @@ if (!env.PORT) {
 }
 
 if (!env.PLAYWRIGHT_WEB_SERVER) {
-  env.PLAYWRIGHT_WEB_SERVER = "0";
+  env.PLAYWRIGHT_WEB_SERVER = "1";
 }
 
 const child = spawn(

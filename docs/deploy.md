@@ -1,87 +1,140 @@
 # Deployment Guide
 
-Use this checklist when preparing the SaaS Starter for demo, staging, or production environments.
+Deploy this SaaS starter to platforms like Vercel, Render, or Fly.io with minimal configuration. This guide provides step-by-step instructions for demo, staging, and production environments, assuming you've completed the [Installation Guide](install.md).
 
-## Demo deployment (Vercel Hobby)
+## Prerequisites
 
-1. **Create a project** – Log in to Vercel, click *New Project*, and import the GitHub repository.
-2. **Set environment variables** – In the *Environment Variables* section add the keys from `.env.example`. For a demo you can leave Stripe/SMTP keys blank; set `APP_URL` to `https://<your-project>.vercel.app`.
-3. **Configure build** – Install command `npm install`; build command `npm run build`; output directory defaults to `.next`.
-4. **Deploy** – Click *Deploy*. Once live, visit `/login` and choose **Use demo account** to verify the seeded workspace.
-5. **Rate-limit safeguards** – The default limit (60 req / 5 min) protects the Hobby instance. Adjust via `RATE_LIMIT_MAX` or `RATE_LIMIT_WINDOW_MINUTES` if you expect higher traffic.
+- A GitHub repository with your forked/cloned project.
+- Platform account (e.g., Vercel for serverless, or a VPS for self-hosted).
+- Database: SQLite for demos; PostgreSQL (managed like Supabase or AWS RDS) for production.
+- Secrets: Stripe keys (test for staging, live for prod), SMTP for emails, and a strong `AUTH_SECRET`.
+- Optional: Domain name for custom URLs.
 
-Vercel previews automatically re-run CI steps (install, lint, test, build). Promote a preview to production once checks pass.
+Ensure local setup passes checks: `npm run lint`, `npm run typecheck`, and `npm run test`.
 
-## 1. Decide on environments
+## Quick Demo Deployment (Vercel Hobby Plan)
 
-| Environment | Goal | Recommended setup |
-| --- | --- | --- |
-| **Staging** | Internal reviews, demo data | SQLite or lightweight Postgres, Stripe **test** keys, stub email delivery |
-| **Production** | Live customers | Managed Postgres, Stripe **live** keys + webhooks, SMTP provider |
+Ideal for portfolios or quick shares. Vercel handles builds, scaling, and previews.
 
-Keep staging and production entirely separate—unique databases, Stripe projects, and env files. Never reuse secrets across environments.
+1. **Import Repository**:
+   - Log in to [vercel.com](https://vercel.com).
+   - Click *New Project* > Import your GitHub repo.
 
-## 2. Provision secrets
+2. **Configure Environment Variables**:
+   - In Project Settings > Environment Variables, add keys from `.env.example`.
+   - Set `APP_URL` to `https://your-project.vercel.app`.
+   - For demos: Leave Stripe/SMTP blank (uses stubs); add `AUTH_SECRET` (generate via `openssl rand -base64 32`).
 
-Create `.env.staging` / `.env.production` (or use your platform’s secret store) with the following values:
+   | Key | Value for Demo |
+   |-----|----------------|
+   | `AUTH_SECRET` | Your generated secret |
+   | `APP_URL` | Project URL from Vercel |
+   | `DATABASE_URL` | `file:./dev.db` (SQLite) or Postgres connection |
 
-| Key | Notes |
-| --- | --- |
-| `DATABASE_URL` | Point staging to a throwaway database; production should use managed Postgres with backups enabled. |
-| `AUTH_SECRET` | 32+ character secret per environment. Regenerate if leaked. |
-| `APP_URL` | Full HTTPS URL (e.g., `https://staging.example.com`). |
-| `NEXT_PUBLIC_APP_NAME` | Matches your branding per environment. |
-| `STRIPE_SECRET_KEY` | Test or live secret key tied to the right Stripe project. |
-| `STRIPE_PRICE_ID_PRO` | Use a staging-specific price when possible. |
-| `STRIPE_WEBHOOK_SECRET` | Per-environment secret from Stripe (required for live mode). |
-| SMTP keys | Configure to deliver real magic links. Staging can point to a sandboxed inbox. |
-| `RATE_LIMIT_MAX`, `RATE_LIMIT_WINDOW_MINUTES` | Adjust if production traffic differs from defaults. |
+3. **Set Build Commands**:
+   - Install: `npm install`
+   - Build: `npm run build`
+   - Output Directory: `.next`
+   - Root Directory: `./` (default)
 
-Store secrets in your platform’s vault (Vercel, Render, Fly.io, AWS SSM, etc.). Keep an encrypted handoff note for teammates specifying where each secret lives and who owns the master credentials.
+4. **Deploy and Verify**:
+   - Click *Deploy*. Vercel runs CI (lint, test, build).
+   - Once live, visit `/login` > **Use demo account** to access seeded data.
+   - Test: Create a workspace, send an invite (stub email logs to console).
 
-## 3. Database migrations
+Previews auto-deploy on branches; promote to production after checks.
+
+## Staging and Production Environments
+
+Separate environments to avoid mixing data/secrets.
+
+| Environment | Purpose | Setup Recommendations |
+|-------------|---------|-----------------------|
+| **Staging** | Testing, demos | SQLite or lightweight Postgres; Stripe **test** keys; stub emails |
+| **Production** | Live users | Managed Postgres (backups enabled); Stripe **live** keys + webhooks; Real SMTP |
+
+- **Never share secrets** between envs. Use platform vaults (Vercel Secrets, AWS SSM).
+- Update `APP_URL` to your domain (e.g., `https://app.example.com`).
+
+### Step 1: Provision Secrets
+
+Create env files or platform secrets:
+
+| Key | Staging Notes | Production Notes |
+|-----|---------------|------------------|
+| `DATABASE_URL` | Throwaway DB | Managed Postgres with PITR backups |
+| `AUTH_SECRET` | Unique per env | Regenerate if compromised |
+| `APP_URL` | `https://staging.example.com` | `https://app.example.com` |
+| `NEXT_PUBLIC_APP_NAME` | "SaaS Starter Staging" | Your branded name |
+| `STRIPE_SECRET_KEY` | Test key | Live key |
+| `STRIPE_PRICE_ID_PRO` | Test price ID | Live price ID |
+| `STRIPE_WEBHOOK_SECRET` | Test webhook secret | Live webhook secret |
+| `SMTP_*` | Sandbox (e.g., Mailtrap) | Provider like SendGrid |
+
+Validate with local `npm run dev` before deploying.
+
+### Step 2: Database Setup
+
+For production (Postgres):
 
 ```bash
+# Generate Prisma client
 npm run db:generate
+
+# Apply migrations (in CI/CD or manually)
 npx prisma migrate deploy
 ```
 
-For SQLite-based staging, ensure the file path in `DATABASE_URL` is writable. For Postgres, run migrations as part of your CI/CD pipeline before `npm run start`.
+- Commit migrations to Git for reproducibility.
+- Seed demo data only in staging: `npm run db:seed`.
+- See [Database Schema](architecture.md#database-schema-highlights) for details.
 
-## 4. Stripe webhooks
+### Step 3: Configure Stripe Webhooks
 
-Create a webhook endpoint per environment pointing to:
+1. In Stripe Dashboard > Webhooks > Add endpoint:
+   - URL: `https://your-domain.com/api/billing/webhook`
+   - Events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
 
-```
-https://<env-domain>/api/billing/webhook
-```
+2. Copy the signing secret to `STRIPE_WEBHOOK_SECRET`.
 
-Listen for `checkout.session.completed`, `customer.subscription.updated`, and `customer.subscription.deleted`. Copy the signing secret into `STRIPE_WEBHOOK_SECRET` so the handler verifies every request. Without a secret the app reverts to stub mode automatically.
+Without this, billing falls back to stubs. Test by upgrading a workspace.
 
-## 5. Build & release
+### Step 4: Build and Deploy
 
 ```bash
 npm install
 npm run build
+npm run start  # For self-hosted; Vercel auto-starts
 ```
 
-Start the app with `npm run start` (Next.js production server). Make sure your host supports Node.js 20+.
+- **Vercel**: Git push triggers auto-deploy.
+- **Other Platforms**: Use Docker or PM2 for Node.js runtime (Node 20+).
+- CI: GitHub Actions (`.github/workflows/ci.yml`) runs checks; require for merges.
 
-CI (`.github/workflows/ci.yml`) already runs lint, typecheck, tests, and build on Ubuntu. Mirror the same steps in your deployment provider or keep CI as a required check before promotion.
+### Step 5: Post-Deployment Checklist
 
-## 6. Packaging handoff (optional)
+- [ ] **Auth Test**: Sign in via magic link or demo; verify session.
+- [ ] **Billing Flow**: Upgrade to Pro (test mode); confirm webhook updates status.
+- [ ] **Invites**: Send workspace invite; check email delivery and acceptance.
+- [ ] **Health Checks**: Run `npm run test` in staging; monitor logs for errors.
+- [ ] **Backups**: Set up DB snapshots; test restore (see [Operations Runbook](ops.md)).
+- [ ] **Monitoring**: Add alerts for 5xx errors, rate limits, and webhook failures.
 
-Need a self-contained bundle for clients or offline deployment?
+For packaging (ZIP + checksum for handoff):
 
 ```bash
 npm run package
 ```
 
-The ZIP and corresponding SHA256 checksum appear in `dist/`. Share both alongside your secret handoff document.
+Outputs to `dist/`; share with clients.
 
-## 7. Post-deploy checklist
+## Troubleshooting
 
-- ✅ Smoke-test login and the dashboard using a staging account.
-- ✅ Trigger a Stripe test checkout (staging) or low-value plan (production) and confirm webhooks update billing status.
-- ✅ Send a magic link invite and ensure email delivery works end-to-end.
-- ✅ Capture backups (see [`docs/ops.md`](ops.md)) and verify restore instructions.
+- **Build Fails**: Check env vars; run `npm run build` locally.
+- **DB Connection**: Verify `DATABASE_URL`; ensure provider allows connections.
+- **Emails Not Sending**: Confirm SMTP; use stubs for testing.
+- **Rate Limits**: Adjust `RATE_LIMIT_MAX` if traffic spikes.
+
+Refer to [Security Best Practices](security.md) for hardening and [Features](features.md) for advanced configs. For local ops, see [Operations Runbook](ops.md).
+
+Your SaaS is now live—explore the [Dashboard](https://your-domain.com/dashboard)!

@@ -1,4 +1,5 @@
 import { PrismaClient, WorkspaceRole } from "@prisma/client";
+import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
@@ -7,9 +8,10 @@ async function upsertUser(
   name: string,
   workspaceId: string,
   role: WorkspaceRole,
-  timezone: string
+  timezone: string,
+  password?: string
 ) {
-  const user = await prisma.user.upsert({
+  const userData: any = {
     where: { email },
     update: {
       name,
@@ -22,7 +24,15 @@ async function upsertUser(
       defaultWorkspaceId: workspaceId,
       timezone,
     },
-  });
+  };
+
+  if (password) {
+    const hashedPassword = await bcrypt.hash(password, 12);
+    userData.create.password = hashedPassword;
+    userData.update.password = hashedPassword;
+  }
+
+  const user = await prisma.user.upsert(userData);
 
   await prisma.workspaceMember.upsert({
     where: {
@@ -58,8 +68,8 @@ async function main() {
     },
   });
 
-  const owner = await upsertUser("founder@example.com", "Founding User", workspace.id, "OWNER", "America/New_York");
-  const teammate = await upsertUser("teammate@example.com", "Teammate", workspace.id, "ADMIN", "Europe/London");
+  const owner = await upsertUser("founder@example.com", "Founding User", workspace.id, "OWNER", "America/New_York", "password123");
+  const teammate = await upsertUser("teammate@example.com", "Teammate", workspace.id, "ADMIN", "Europe/London", "password123");
 
   const demoWorkspace = await prisma.workspace.upsert({
     where: { slug: "demo-studio" },
@@ -91,6 +101,8 @@ async function main() {
     },
   });
 
+  const demoUser = await upsertUser("demo@saas.com", "Demo User", demoWorkspace.id, "OWNER", "UTC", "password123");
+
   await prisma.workspaceInvite.upsert({
     where: { token: "seed-token-demo" },
     update: {
@@ -108,6 +120,38 @@ async function main() {
       status: "PENDING",
       expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 48),
       creatorId: owner.id,
+    },
+  });
+
+  // Add sample invite for demo workspace
+  await prisma.workspaceInvite.upsert({
+    where: { token: "demo-invite-token" },
+    update: {
+      email: "demo-invite@saas.com",
+      workspaceId: demoWorkspace.id,
+      role: "MEMBER",
+      status: "PENDING",
+      expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 48),
+    },
+    create: {
+      email: "demo-invite@saas.com",
+      workspaceId: demoWorkspace.id,
+      role: "MEMBER",
+      token: "demo-invite-token",
+      status: "PENDING",
+      expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 48),
+      creatorId: demoUser.id,
+    },
+  });
+
+  // Set test subscription for acme workspace (stub for demo)
+  await prisma.workspace.update({
+    where: { id: workspace.id },
+    data: {
+      stripeSubscriptionId: "sub_test_12345", // Mock test sub ID
+      stripeCustomerId: "cus_test_12345", // Mock test customer ID
+      plan: "PRO",
+      billingStatus: "ACTIVE",
     },
   });
 
