@@ -70,6 +70,7 @@ Create env files or platform secrets:
 | `STRIPE_PRICE_ID_PRO` | Test price ID | Live price ID |
 | `STRIPE_WEBHOOK_SECRET` | Test webhook secret | Live webhook secret |
 | `SMTP_*` | Sandbox (e.g., Mailtrap) | Provider like SendGrid |
+| `DISABLE_INDEXING` | `true` for public demos without SEO | `false` or unset |
 
 Validate with local `npm run dev` before deploying.
 

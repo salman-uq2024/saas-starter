@@ -30,6 +30,7 @@ describe("environment configuration", () => {
 
     expect(server.DATABASE_URL).toBe("file:./dev.db");
     expect(server.RATE_LIMIT_MAX).toBe(50);
+    expect(server.DISABLE_INDEXING).toBe(false);
     expect(client.NEXT_PUBLIC_APP_NAME).toBeTruthy();
   });
 

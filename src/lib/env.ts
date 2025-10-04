@@ -17,6 +17,7 @@ const serverSchema = z.object({
     .default(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"),
   RATE_LIMIT_MAX: z.coerce.number().min(10).default(50),
   RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().min(1).default(5),
+  DISABLE_INDEXING: z.coerce.boolean().default(false),
 });
 
 const publicSchema = z.object({
@@ -60,6 +61,7 @@ function parseServerEnv(): ServerEnv {
     APP_URL: sanitize(process.env.APP_URL),
     RATE_LIMIT_MAX: sanitize(process.env.RATE_LIMIT_MAX),
     RATE_LIMIT_WINDOW_MINUTES: sanitize(process.env.RATE_LIMIT_WINDOW_MINUTES),
+    DISABLE_INDEXING: sanitize(process.env.DISABLE_INDEXING),
   };
 
   const parsed = serverSchema.safeParse(rawServerEnv);

@@ -9,9 +9,7 @@ const stripeClient = (() => {
   if (!env.STRIPE_SECRET_KEY) {
     return null;
   }
-  return new Stripe(env.STRIPE_SECRET_KEY, {
-    apiVersion: "2025-08-27.basil",
-  });
+  return new Stripe(env.STRIPE_SECRET_KEY);
 })();
 
 export function getBillingRuntimeInfo() {

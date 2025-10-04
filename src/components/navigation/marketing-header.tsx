@@ -28,7 +28,7 @@ export function MarketingHeader({ isAuthenticated }: MarketingHeaderProps) {
             <Link className="hover:text-slate-900" href="#pricing">
               Pricing
             </Link>
-            <Link className="hover:text-slate-900" href="/docs/install">
+            <Link className="hover:text-slate-900" href="/docs">
               Docs
             </Link>
           </nav>

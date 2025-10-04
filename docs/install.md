@@ -46,6 +46,7 @@ Edit `.env.local` with your values. Key variables include:
 | `STRIPE_SECRET_KEY` | Stripe secret key for billing (optional for stub mode). | `sk_test_...` |
 | `STRIPE_PRICE_ID_PRO` | ID of your Pro plan price in Stripe (optional). | `price_123...` |
 | `SMTP_*`            | SMTP settings for email (optional for local demos; required for magic links). | See `.env.example` |
+| `DISABLE_INDEXING`  | Set to `true` to add `noindex`/`nofollow` headers for demo deployments. | `false` |
 
 For full details, refer to the [Environment Validation](../src/lib/env.ts) in the codebase. Invalid configs will throw errors on startup.
 
