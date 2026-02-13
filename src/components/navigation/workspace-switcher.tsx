@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { ChevronDown } from "lucide-react";
 import { switchWorkspaceAction } from "@/server/actions/workspace-actions";
 import { Button } from "@/components/ui/button";
@@ -24,13 +24,41 @@ interface WorkspaceSwitcherProps {
 export function WorkspaceSwitcher({ workspaces, activeWorkspaceId }: WorkspaceSwitcherProps) {
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const handleSwitch = (workspaceId: string) => {
     const formData = new FormData();
     formData.set("workspaceId", workspaceId);
+    setError(null);
     startTransition(async () => {
-      await switchWorkspaceAction(formData);
-      setOpen(false);
+      const result = await switchWorkspaceAction(formData);
+      if (result.success) {
+        setOpen(false);
+        return;
+      }
+      setError(result.error ?? "Unable to switch workspace");
     });
   };
 
@@ -41,7 +69,7 @@ export function WorkspaceSwitcher({ workspaces, activeWorkspaceId }: WorkspaceSw
   const activeWorkspace = workspaces.find((member) => member.workspace.id === activeWorkspaceId) ?? workspaces[0];
 
   return (
-    <div className="relative inline-flex">
+    <div className="relative inline-flex" ref={containerRef}>
       <Button
         type="button"
         variant="secondary"
@@ -87,6 +115,7 @@ export function WorkspaceSwitcher({ workspaces, activeWorkspaceId }: WorkspaceSw
               </Link>
             </li>
           </ul>
+          {error ? <p className="px-3 pt-2 text-xs text-red-500">{error}</p> : null}
         </div>
       ) : null}
     </div>

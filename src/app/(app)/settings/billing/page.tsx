@@ -15,7 +15,9 @@ export default async function BillingSettingsPage() {
   }
 
   const memberships = await listWorkspacesForUser(session.user.id);
-  const workspaceId = session.user.defaultWorkspaceId ?? memberships[0]?.workspace.id;
+  const workspaceId =
+    memberships.find((membership) => membership.workspace.id === session.user.defaultWorkspaceId)?.workspace.id ??
+    memberships[0]?.workspace.id;
 
   if (!workspaceId) {
     return <EmptyState title="No workspace selected" description="Create a workspace to configure billing." />;

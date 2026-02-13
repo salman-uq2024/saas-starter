@@ -1,4 +1,4 @@
-import { PrismaClient, WorkspaceRole } from "@prisma/client";
+import { Prisma, PrismaClient, WorkspaceRole } from "@prisma/client";
 import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
@@ -11,7 +11,7 @@ async function upsertUser(
   timezone: string,
   password?: string
 ) {
-  const userData: any = {
+  const userData: Prisma.UserUpsertArgs = {
     where: { email },
     update: {
       name,

@@ -11,6 +11,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   const workspaces = await listWorkspacesForUser(session.user.id);
+  const activeWorkspaceId =
+    workspaces.find((membership) => membership.workspace.id === session.user.defaultWorkspaceId)?.workspace.id ??
+    workspaces[0]?.workspace.id;
 
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -18,7 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="flex flex-1 flex-col">
         <AppTopbar
           workspaces={workspaces}
-          activeWorkspaceId={session.user.defaultWorkspaceId ?? workspaces[0]?.workspace.id}
+          activeWorkspaceId={activeWorkspaceId}
           user={{ name: session.user.name, email: session.user.email, image: session.user.image }}
         />
         <main className="flex-1 px-4 py-6 md:px-8">

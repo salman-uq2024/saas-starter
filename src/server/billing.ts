@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import type { Workspace } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getServerEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
@@ -32,14 +33,23 @@ type PortalResult = {
   mode: "live" | "stub";
 };
 
-async function ensureWorkspace(workspaceId: string) {
-  const workspace = await prisma.workspace.findUnique({
-    where: { id: workspaceId },
+async function assertWorkspaceAccess(actorId: string, workspaceId: string) {
+  const membership = await prisma.workspaceMember.findFirst({
+    where: {
+      userId: actorId,
+      workspaceId,
+      status: "ACTIVE",
+    },
+    include: {
+      workspace: true,
+    },
   });
-  if (!workspace) {
-    throw new Error("Workspace not found");
+
+  if (!membership) {
+    throw new Error("You do not have access to this workspace");
   }
-  return workspace;
+
+  return membership.workspace;
 }
 
 async function findWorkspaceIdByCustomer(customer: string | Stripe.Customer | null | undefined) {
@@ -66,17 +76,15 @@ async function findWorkspaceIdBySubscription(subscription: string | Stripe.Subsc
   return workspace?.id ?? null;
 }
 
-async function ensureStripeCustomer(workspaceId: string): Promise<string> {
-  const workspace = await ensureWorkspace(workspaceId);
-
+async function ensureStripeCustomer(workspace: Workspace): Promise<string> {
   if (workspace.stripeCustomerId) {
     return workspace.stripeCustomerId;
   }
 
   if (!stripeClient) {
-    const fakeCustomerId = `stub_cus_${workspaceId}`;
+    const fakeCustomerId = `stub_cus_${workspace.id}`;
     await prisma.workspace.update({
-      where: { id: workspaceId },
+      where: { id: workspace.id },
       data: {
         stripeCustomerId: fakeCustomerId,
       },
@@ -87,18 +95,18 @@ async function ensureStripeCustomer(workspaceId: string): Promise<string> {
   const customer = await stripeClient.customers.create({
     name: workspace.name,
     metadata: {
-      workspaceId,
+      workspaceId: workspace.id,
     },
   });
 
   await prisma.workspace.update({
-    where: { id: workspaceId },
+    where: { id: workspace.id },
     data: {
       stripeCustomerId: customer.id,
     },
   });
 
-  logger.info("Stripe customer created", { workspaceId, customerId: customer.id });
+  logger.info("Stripe customer created", { workspaceId: workspace.id, customerId: customer.id });
 
   return customer.id;
 }
@@ -108,7 +116,7 @@ export async function createCheckoutSession(params: {
   actorId: string;
 }): Promise<CheckoutResult> {
   const env = getServerEnv();
-  const workspace = await ensureWorkspace(params.workspaceId);
+  const workspace = await assertWorkspaceAccess(params.actorId, params.workspaceId);
 
   if (!stripeClient || !env.STRIPE_PRICE_ID_PRO || !env.STRIPE_SECRET_KEY) {
     await prisma.workspace.update({
@@ -133,7 +141,7 @@ export async function createCheckoutSession(params: {
     };
   }
 
-  const customerId = await ensureStripeCustomer(workspace.id);
+  const customerId = await ensureStripeCustomer(workspace);
 
   const session = await stripeClient.checkout.sessions.create({
     mode: "subscription",
@@ -174,7 +182,7 @@ export async function createBillingPortalSession(params: {
   actorId: string;
 }): Promise<PortalResult> {
   const env = getServerEnv();
-  const workspace = await ensureWorkspace(params.workspaceId);
+  const workspace = await assertWorkspaceAccess(params.actorId, params.workspaceId);
 
   if (!stripeClient || !env.STRIPE_SECRET_KEY) {
     await recordAuditLog({
@@ -189,7 +197,7 @@ export async function createBillingPortalSession(params: {
     };
   }
 
-  const customerId = await ensureStripeCustomer(workspace.id);
+  const customerId = await ensureStripeCustomer(workspace);
 
   const session = await stripeClient.billingPortal.sessions.create({
     customer: customerId,

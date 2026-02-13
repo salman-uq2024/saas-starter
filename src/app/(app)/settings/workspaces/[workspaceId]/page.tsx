@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getServerAuthSession } from "@/server/auth";
-import { getWorkspaceSummary } from "@/server/workspaces";
+import { getWorkspaceSummaryForUser } from "@/server/workspaces";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { InviteMemberForm } from "@/components/settings/invite-member-form";
@@ -22,7 +22,7 @@ export default async function WorkspaceDetailsPage({ params }: WorkspaceDetailsP
     return null;
   }
 
-  const workspace = await getWorkspaceSummary(workspaceId);
+  const workspace = await getWorkspaceSummaryForUser(workspaceId, session.user.id);
   if (!workspace) {
     notFound();
   }

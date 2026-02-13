@@ -33,8 +33,15 @@ export default async function LoginPage() {
         <CardContent className="p-0 pt-6">
           <LoginForm />
           <p className="mt-6 text-xs text-slate-500">
-            By continuing you agree to the <Link href="#" className="underline">terms</Link> and confirm you reviewed the
-            <Link href="#" className="ml-1 underline">privacy notice</Link>.
+            By continuing you agree to the{" "}
+            <Link href="/terms" className="underline">
+              terms
+            </Link>{" "}
+            and confirm you reviewed the{" "}
+            <Link href="/privacy" className="underline">
+              privacy notice
+            </Link>
+            .
           </p>
         </CardContent>
       </Card>

@@ -18,7 +18,9 @@ export default async function DashboardPage() {
   }
 
   const memberships = await listWorkspacesForUser(session.user.id);
-  const activeWorkspaceId = session.user.defaultWorkspaceId ?? memberships[0]?.workspace.id;
+  const activeWorkspaceId =
+    memberships.find((membership) => membership.workspace.id === session.user.defaultWorkspaceId)?.workspace.id ??
+    memberships[0]?.workspace.id;
 
   if (!activeWorkspaceId) {
     return (

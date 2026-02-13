@@ -21,19 +21,6 @@ A full-stack SaaS starter kit built with **Next.js 15**, **Prisma 6**, and **Str
 - **Documentation Hub**: In-app docs viewer renders the markdown guides shipped in `/docs`.
 - **Production-Ready**: Rate limiting, logging, error handling, and operational playbooks for scaling.
 
-## Screenshots
-
-### Dashboard Overview
-![Dashboard](screenshots/dashboard.png)
-
-### Workspace Management
-![Workspaces](screenshots/workspaces.png)
-
-### Billing Portal
-![Billing](screenshots/billing.png)
-
-*(Add actual screenshots or GIFs here for a live demo feel. Tools like Vercel previews or Loom can help capture them.)*
-
 ## Quick Start
 
 ### Prerequisites
@@ -57,7 +44,7 @@ Detailed setup in [docs/install.md](docs/install.md).
 
 ## Demo & Links
 
-- **Live Demo**: [TBD](https://your-app.vercel.app) (set `DISABLE_INDEXING=true` until you’re ready for SEO)
+- **Live Demo**: `https://your-app.vercel.app` (replace with your deployment URL; set `DISABLE_INDEXING=true` until launch)
 - **Deploy to Vercel**: [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/salman/saas-starter&project-name=saas-starter&repository-name=saas-starter)
 - **Documentation**: In-app at [`/docs`](http://localhost:3000/docs) or in the repo at [`/docs`](docs/)
 

@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { createBillingPortalSession, createCheckoutSession } from "@/server/billing";
 import { enforceRateLimit, requireUser } from "@/server/actions/helpers";
+import { listWorkspacesForUser } from "@/server/workspaces";
 
 type ActionResult<T = void> =
   | { success: true; data?: T }
@@ -21,10 +22,14 @@ export async function startCheckoutAction(formData: FormData): Promise<ActionRes
   }
 
   const parsed = workspaceSchema.safeParse({ workspaceId: formData.get("workspaceId") });
+  const memberships = await listWorkspacesForUser(user.id);
+  const fallbackWorkspaceId =
+    memberships.find((membership) => membership.workspace.id === user.defaultWorkspaceId)?.workspace.id ??
+    memberships[0]?.workspace.id;
 
   const workspaceId = parsed.success
-    ? parsed.data.workspaceId ?? user.defaultWorkspaceId
-    : user.defaultWorkspaceId;
+    ? parsed.data.workspaceId ?? fallbackWorkspaceId
+    : fallbackWorkspaceId;
 
   if (!workspaceId) {
     return { success: false, error: "No workspace selected" };
@@ -56,9 +61,13 @@ export async function startBillingPortalAction(formData: FormData): Promise<Acti
   }
 
   const parsed = workspaceSchema.safeParse({ workspaceId: formData.get("workspaceId") });
+  const memberships = await listWorkspacesForUser(user.id);
+  const fallbackWorkspaceId =
+    memberships.find((membership) => membership.workspace.id === user.defaultWorkspaceId)?.workspace.id ??
+    memberships[0]?.workspace.id;
   const workspaceId = parsed.success
-    ? parsed.data.workspaceId ?? user.defaultWorkspaceId
-    : user.defaultWorkspaceId;
+    ? parsed.data.workspaceId ?? fallbackWorkspaceId
+    : fallbackWorkspaceId;
 
   if (!workspaceId) {
     return { success: false, error: "No workspace selected" };

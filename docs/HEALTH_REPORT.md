@@ -1,23 +1,25 @@
 # HEALTH REPORT
 
 ## Summary
-- `npm run lint` ✔️
-- `npm run typecheck` ✔️
-- `npm run build` ✔️ (also invoked during tests and packaging)
-- `PLAYWRIGHT_SKIP_BROWSER=1 npm run test` ✔️ (unit tests pass; marketing smoke skipped with documented flag due to sandboxed Chromium in this environment)
-- `npm run package` ✔️ (`dist/saas-starter-2025-09-28-be17ddf.zip` + SHA generated)
+- `npm run lint` passing
+- `npm run typecheck` passing
+- `npm run test:unit` passing
+- `npm run test:e2e` passing
+- `npm run build` passing
 
-## Fixes
-1. `tests/unit/workspace-actions.test.ts` – narrowed success branch before reading action payload to satisfy TS strictness and reflect real-world failure handling.
-2. `tests/e2e/marketing.spec.ts` – rewrote marketing smoke test to render the Next.js page via `renderToStaticMarkup`, enabling headless verification without starting a web server and adding an explicit skip flag for sandboxed environments.
+## Recent Hardening
+1. Workspace management now enforces tenant boundaries for details pages and invite cancellation.
+2. Invite acceptance now verifies the signed-in email matches the invited email (case-insensitive).
+3. Billing checkout and portal creation now require active workspace membership.
+4. UX improvements added for destructive actions (confirmation and inline error feedback).
+5. Broken legal placeholder links were replaced with live `/terms` and `/privacy` pages.
 
-## Remaining Risks / TODOs
-- Playwright smoke skips when `PLAYWRIGHT_SKIP_BROWSER=1`. Run `npm run test` without the flag on CI or any environment where Chromium can launch to exercise the marketing flow end-to-end.
-- Prisma migrations are still absent; generate and commit baseline migrations before pointing to a shared Postgres instance.
-- Broaden automated coverage (dashboard, billing success path) as captured in `docs/RESUME_PLAN.md` to catch regressions beyond the marketing surface.
+## Residual Risks
+- E2E coverage is still smoke-level for auth-protected app flows because production test runs do not use demo login credentials by default.
+- Seed data includes demo passwords for local development convenience; rotate or remove before public deployment.
 
 ## Key Commands
-- **Demo:** `npm run dev`, then visit `http://localhost:3000` and click **Use demo account**.
-- **Tests:** `npm run test` (set `PLAYWRIGHT_SKIP_BROWSER=1` when Chromium cannot launch locally).
-- **Build:** `npm run build`
-- **Package:** `npm run package`
+- **Local setup:** `npm run setup`
+- **Dev server:** `npm run dev`
+- **Validation:** `npm run ci`
+- **Package handoff:** `npm run package`

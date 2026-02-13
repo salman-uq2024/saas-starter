@@ -194,11 +194,12 @@ export async function inviteToWorkspace(params: {
   delivered: boolean;
 }> {
   await assertCanManageWorkspace(params.inviterId, params.workspaceId);
+  const normalizedEmail = params.email.trim().toLowerCase();
 
   const existingMember = await prisma.workspaceMember.findFirst({
     where: {
       workspaceId: params.workspaceId,
-      user: { email: params.email },
+      user: { email: normalizedEmail },
     },
   });
 
@@ -209,7 +210,7 @@ export async function inviteToWorkspace(params: {
   const existingInvite = await prisma.workspaceInvite.findFirst({
     where: {
       workspaceId: params.workspaceId,
-      email: params.email,
+      email: normalizedEmail,
       status: "PENDING",
     },
     include: {
@@ -232,7 +233,7 @@ export async function inviteToWorkspace(params: {
 
   const invite = await prisma.workspaceInvite.create({
     data: {
-      email: params.email.toLowerCase(),
+      email: normalizedEmail,
       workspaceId: params.workspaceId,
       role: params.role,
       token,
@@ -307,6 +308,19 @@ export async function acceptInvite(params: { token: string; userId: string }) {
     throw new Error("Invitation has expired");
   }
 
+  const user = await prisma.user.findUnique({
+    where: { id: params.userId },
+    select: { email: true },
+  });
+
+  if (!user?.email) {
+    throw new Error("User account not found");
+  }
+
+  if (user.email.toLowerCase() !== invite.email.toLowerCase()) {
+    throw new Error(`Sign in with ${invite.email} to accept this invitation.`);
+  }
+
   await prisma.$transaction([
     prisma.workspaceMember.upsert({
       where: {
@@ -347,9 +361,17 @@ export async function acceptInvite(params: { token: string; userId: string }) {
   return invite.workspaceId;
 }
 
-export async function getWorkspaceSummary(workspaceId: string) {
-  return prisma.workspace.findUnique({
-    where: { id: workspaceId },
+export async function getWorkspaceSummaryForUser(workspaceId: string, userId: string) {
+  return prisma.workspace.findFirst({
+    where: {
+      id: workspaceId,
+      memberships: {
+        some: {
+          userId,
+          status: "ACTIVE",
+        },
+      },
+    },
     include: {
       memberships: {
         include: {
@@ -496,10 +518,18 @@ export async function removeMember(params: { workspaceId: string; actorId: strin
 export async function cancelInvite(params: { workspaceId: string; actorId: string; inviteId: string }) {
   await assertCanManageWorkspace(params.actorId, params.workspaceId);
 
-  await prisma.workspaceInvite.update({
-    where: { id: params.inviteId },
+  const updated = await prisma.workspaceInvite.updateMany({
+    where: {
+      id: params.inviteId,
+      workspaceId: params.workspaceId,
+      status: "PENDING",
+    },
     data: { status: "CANCELED" },
   });
+
+  if (updated.count === 0) {
+    throw new Error("Invite not found");
+  }
 
   await recordAuditLog({
     workspaceId: params.workspaceId,

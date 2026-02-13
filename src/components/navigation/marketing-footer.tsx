@@ -21,6 +21,12 @@ export function MarketingFooter() {
           <Link className="hover:text-slate-900" href="/docs/loom-script">
             Loom Script
           </Link>
+          <Link className="hover:text-slate-900" href="/terms">
+            Terms
+          </Link>
+          <Link className="hover:text-slate-900" href="/privacy">
+            Privacy
+          </Link>
         </nav>
       </div>
     </footer>

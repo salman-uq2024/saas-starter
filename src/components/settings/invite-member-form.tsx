@@ -26,6 +26,8 @@ export function InviteMemberForm({ workspaceId }: InviteMemberFormProps) {
     const form = event.currentTarget;
     const formData = new FormData(form);
     formData.set("workspaceId", workspaceId);
+    const normalizedEmail = (formData.get("email")?.toString() ?? "").trim().toLowerCase();
+    formData.set("email", normalizedEmail);
 
     startTransition(async () => {
       const result = await inviteMemberAction(formData);
@@ -48,6 +50,7 @@ export function InviteMemberForm({ workspaceId }: InviteMemberFormProps) {
     }
     try {
       await navigator.clipboard.writeText(acceptUrl);
+      setError(null);
       setMessage("Invite link copied to clipboard.");
     } catch {
       setError("Unable to copy link. Copy it manually below.");
@@ -60,7 +63,15 @@ export function InviteMemberForm({ workspaceId }: InviteMemberFormProps) {
         <label className="text-sm font-medium text-slate-600" htmlFor="invite-email">
           Email address
         </label>
-        <Input id="invite-email" name="email" type="email" placeholder="new teammate" required disabled={isPending} />
+        <Input
+          id="invite-email"
+          name="email"
+          type="email"
+          placeholder="teammate@company.com"
+          autoComplete="email"
+          required
+          disabled={isPending}
+        />
       </div>
       <div className="space-y-2">
         <label className="text-sm font-medium text-slate-600" htmlFor="invite-role">
@@ -83,7 +94,7 @@ export function InviteMemberForm({ workspaceId }: InviteMemberFormProps) {
         <div className="space-y-2 rounded-md border border-dashed border-slate-300 p-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-300">
           <div className="flex items-center justify-between gap-2">
             <span className="font-semibold text-slate-600 dark:text-slate-200">Invite link</span>
-            <Button type="button" size="sm" variant="secondary" onClick={handleCopyLink}>
+            <Button type="button" size="sm" variant="secondary" onClick={handleCopyLink} disabled={isPending}>
               Copy link
             </Button>
           </div>
